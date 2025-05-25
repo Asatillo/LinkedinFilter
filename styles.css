@@ -1,0 +1,38 @@
+/* LinkedIn Job Filter Styles */
+
+/* Smooth transitions for hiding/showing jobs */
+li[data-occludable-job-id] {
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+}
+
+/* Style for hidden jobs (optional - can be completely hidden) */
+li[data-linkedin-filter-hidden="true"] {
+  display: none !important;
+}
+
+/* Add a subtle indicator when jobs are being filtered */
+.jobs-search-results-list__subtitle::after,
+.jobs-search-results__subtitle::after {
+  content: " 🔍";
+  opacity: 0.6;
+  font-size: 0.8em;
+}
+
+/* Optional: Add a small notification badge */
+.linkedin-filter-active {
+  position: relative;
+}
+
+.linkedin-filter-active::before {
+  content: "Filter Active";
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #0a66c2;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10000;
+  opacity: 0.8;
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>LinkedIn Job Filter</title>
+  </head>
+  <body>
+    <div class="header">
+      <img src="assets/icon16.png" alt="LinkedIn Job Filter" class="logo-icon">
+      <div class="title">LinkedIn Job Filter</div>
+    </div>
+
+    <div class="option">
+      <div>
+        <div class="option-label">Hide Applied Jobs</div>
+        <div class="option-description">Hide jobs marked as "Applied"</div>
+      </div>
+      <div class="toggle" id="hideApplied"></div>
+    </div>
+
+    <div class="option">
+      <div>
+        <div class="option-label">Hide Viewed Jobs</div>
+        <div class="option-description">Hide jobs marked as "Viewed"</div>
+      </div>
+      <div class="toggle" id="hideViewed"></div>
+    </div>
+
+    <div class="option">
+      <div>
+        <div class="option-label">Hide Promoted Jobs</div>
+        <div class="option-description">Hide jobs marked as "Promoted"</div>
+      </div>
+      <div class="toggle" id="hidePromoted"></div>
+    </div>
+
+    <div class="option">
+      <div>
+        <div class="option-label">Hide Blacklisted Companies</div>
+        <div class="option-description">Hide jobs from specific companies</div>
+      </div>
+      <div class="toggle" id="hideCompanies"></div>
+    </div>
+
+    <div class="company-section">
+      <div class="section-header">
+        <span class="section-title">Company Blacklist</span>
+        <button id="addCompanyBtn" class="add-btn">+ Add</button>
+      </div>
+
+      <div id="addCompanyForm" class="add-form" style="display: none">
+        <input
+          type="text"
+          id="companyInput"
+          placeholder="Enter company name..."
+          maxlength="100"
+        />
+        <div class="form-buttons">
+          <button id="saveCompanyBtn" class="save-btn">Save</button>
+          <button id="cancelCompanyBtn" class="cancel-btn">Cancel</button>
+        </div>
+      </div>
+
+      <div id="companiesList" class="companies-list">
+        <!-- Companies will be populated here -->
+      </div>
+    </div>
+
+    <div class="status" id="status">Extension ready</div>
+
+    <div class="footer">
+      <div class="footer-text">
+        Built with <span class="heart">❤️</span> by 
+        <a href="https://github.com/Asatillo" target="_blank" class="author-link">Asat</a>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
