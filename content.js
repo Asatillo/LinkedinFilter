@@ -80,8 +80,6 @@
       "li[data-occludable-job-id], .job-card-container, .base-search-card, .job-card-list__item"
     );
 
-    console.log(`Found ${jobCards.length} job cards to filter`);
-
     jobCards.forEach((jobCard, index) => {
       const footerItems = jobCard.querySelectorAll(
         ".job-card-container__footer-item, .job-card-container__footer .artdeco-inline-feedback"
@@ -112,8 +110,6 @@
         const companyName = getCompanyName(jobCard);
 
         if (companyName) {
-          console.log(`Job ${index + 1}: Company found - "${companyName}"`);
-
           // Case-insensitive comparison with exact matching and partial matching
           const isBlacklisted = settings.blacklistedCompanies.some(
             (blacklistedCompany) => {
@@ -132,10 +128,7 @@
           if (isBlacklisted) {
             shouldHide = true;
             hideReason = `Blacklisted company: ${companyName}`;
-            console.log(`Hiding job from blacklisted company: ${companyName}`);
           }
-        } else {
-          console.log(`Job ${index + 1}: No company name found`);
         }
       }
 
@@ -144,7 +137,6 @@
         jobCard.setAttribute("data-linkedin-filter-hidden", "true");
         jobCard.setAttribute("data-linkedin-filter-reason", hideReason);
         jobCard.setAttribute("data-linkedin-filter-processed", "true");
-        console.log(`Hidden job ${index + 1}: ${hideReason}`);
       } else {
         jobCard.style.display = "";
         jobCard.removeAttribute("data-linkedin-filter-hidden");
@@ -167,10 +159,6 @@
       'li[data-occludable-job-id][data-linkedin-filter-hidden="true"]'
     ).length;
     const visibleJobs = totalJobs - hiddenJobs;
-
-    console.log(
-      `Job counter: ${visibleJobs} visible, ${hiddenJobs} hidden, ${totalJobs} total`
-    );
 
     // Try to find and update LinkedIn's job counter with more specific selectors
     const counters = document.querySelectorAll(
@@ -208,7 +196,6 @@
           counter.textContent = originalText;
         }
 
-        console.log(`Updated counter: "${counter.textContent}"`);
       }
     });
   }
@@ -249,7 +236,6 @@
         // Debounce the filtering to avoid excessive calls
         clearTimeout(window.linkedinFilterTimeout);
         window.linkedinFilterTimeout = setTimeout(() => {
-          console.log("DOM changed, re-filtering jobs...");
           filterJobs();
         }, 300);
       }
@@ -270,7 +256,6 @@
     sendResponse
   ) {
     if (request.action === "updateFilters") {
-      console.log("Received updateFilters message, reloading settings...");
       loadSettings();
     }
   });
@@ -280,12 +265,9 @@
     const jobCards = document.querySelectorAll(
       "li[data-occludable-job-id], .job-card-container, .base-search-card, .job-card-list__item"
     );
-    console.log("=== DEBUG: Company Detection ===");
     jobCards.forEach((card, index) => {
       const company = getCompanyName(card);
-      console.log(`Job ${index + 1}: ${company || "NO COMPANY FOUND"}`);
     });
-    console.log("=== END DEBUG ===");
   }
 
   // Make debug function available globally for testing
@@ -326,7 +308,6 @@
 
   // Initialize
   function init() {
-    console.log("Initializing LinkedIn Job Filter...");
     addFilterCSS();
     loadSettings();
     setupObserver();
@@ -359,7 +340,6 @@
     if (location.href !== currentUrl) {
       currentUrl = location.href;
       if (location.href.includes("/jobs")) {
-        console.log("URL changed to jobs page, reinitializing...");
         setTimeout(init, 1000); // Give LinkedIn time to load the new page
       }
     }
