@@ -193,7 +193,7 @@ body {
 }
 
 .companies-list {
-  max-height: 120px; /* Approximately 3 items (40px each) */
+  max-height: 120px;
   overflow-y: auto;
   border: 1px solid #e1e5e9;
   border-radius: 6px;
@@ -252,8 +252,6 @@ body {
 .footer {
   text-align: center;
   margin-top: 10px;
-  /* padding-top: 16px; */
-  /* border-top: 1px solid #e1e5e9; */
 }
 
 .footer-text {
