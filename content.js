@@ -86,6 +86,13 @@
       .forEach(function (badge) {
         badge.remove();
       });
+    document
+      .querySelectorAll(".linkedin-filter-blacklist-btn")
+      .forEach(function (btn) {
+        btn.remove();
+      });
+    var snackbar = document.getElementById("linkedin-filter-snackbar");
+    if (snackbar) snackbar.remove();
     window._linkedinFilterInitialized = false;
   }
 
@@ -174,6 +181,159 @@
     return null;
   }
 
+  // --- Snackbar ---
+  let snackbarTimer = null;
+
+  function showSnackbar(message, actionLabel, actionFn) {
+    let bar = document.getElementById("linkedin-filter-snackbar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "linkedin-filter-snackbar";
+      document.body.appendChild(bar);
+    }
+
+    bar.textContent = "";
+    const text = document.createElement("span");
+    text.textContent = message;
+    bar.appendChild(text);
+
+    if (actionLabel) {
+      const action = document.createElement("button");
+      action.type = "button";
+      action.textContent = actionLabel;
+      action.addEventListener("click", function () {
+        hideSnackbar();
+        actionFn();
+      });
+      bar.appendChild(action);
+    }
+
+    bar.classList.add("visible");
+    clearTimeout(snackbarTimer);
+    snackbarTimer = setTimeout(hideSnackbar, 5000);
+  }
+
+  function hideSnackbar() {
+    clearTimeout(snackbarTimer);
+    const bar = document.getElementById("linkedin-filter-snackbar");
+    if (bar) bar.classList.remove("visible");
+  }
+
+  // --- Per-card blacklist button ---
+  const BLACKLIST_ICON_SVG =
+    '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"' +
+    ' stroke="currentColor" stroke-width="1.6" aria-hidden="true">' +
+    '<circle cx="8" cy="8" r="6.2"/>' +
+    '<line x1="3.8" y1="3.8" x2="12.2" y2="12.2"/></svg>';
+
+  // Idempotent: called from every filterJobs pass, so buttons survive
+  // LinkedIn's React re-renders and card recycling in the virtual list.
+  function ensureBlacklistButton(jobCard) {
+    if (jobCard.querySelector(".linkedin-filter-blacklist-btn")) return;
+
+    const btn = document.createElement("button");
+    btn.className = "linkedin-filter-blacklist-btn";
+    btn.type = "button";
+    btn.title = "Add this company to the blacklist";
+    btn.innerHTML = BLACKLIST_ICON_SVG;
+    btn.addEventListener("click", function (event) {
+      onBlacklistClick(jobCard, event);
+    });
+
+    // The button is absolutely positioned relative to the card
+    if (getComputedStyle(jobCard).position === "static") {
+      jobCard.style.position = "relative";
+    }
+    jobCard.appendChild(btn);
+  }
+
+  function onBlacklistClick(jobCard, event) {
+    // The whole card is a link — don't navigate to the job
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (_contextInvalid) return;
+
+    const company = getCompanyName(jobCard);
+    if (!company) {
+      showSnackbar("Couldn't detect the company name for this job");
+      return;
+    }
+
+    try {
+      chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
+        if (chrome.runtime.lastError) return;
+
+        const companies = result.blacklistedCompanies || [];
+        const alreadyListed = companies.some(function (c) {
+          return c.toLowerCase() === company.toLowerCase();
+        });
+        if (alreadyListed) {
+          notifyBlacklisted(company, true);
+          return;
+        }
+
+        companies.push(company);
+        chrome.storage.sync.set(
+          { blacklistedCompanies: companies },
+          function () {
+            if (chrome.runtime.lastError) {
+              showSnackbar(
+                "Couldn't save: " + chrome.runtime.lastError.message,
+              );
+              return;
+            }
+            // storage.onChanged re-filters every tab; we only show feedback
+            notifyBlacklisted(company, false);
+          },
+        );
+      });
+    } catch {
+      _contextInvalid = true;
+    }
+  }
+
+  function notifyBlacklisted(company, alreadyListed) {
+    const base = alreadyListed
+      ? '"' + company + '" is already blacklisted'
+      : '"' + company + '" added to blacklist';
+
+    // If nothing will visibly happen, say why and offer to fix it
+    if (!settings.enabled) {
+      showSnackbar(
+        base + " — the extension is turned off",
+        "Turn on",
+        function () {
+          chrome.storage.sync.set({
+            extensionEnabled: true,
+            hideCompanies: true,
+          });
+        },
+      );
+    } else if (!settings.hideCompanies) {
+      showSnackbar(
+        base + ' — "Hide Blacklisted Companies" is off',
+        "Turn on",
+        function () {
+          chrome.storage.sync.set({ hideCompanies: true });
+        },
+      );
+    } else if (!alreadyListed) {
+      showSnackbar(base, "Undo", function () {
+        chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
+          const list = (result.blacklistedCompanies || []).filter(
+            function (c) {
+              return c !== company;
+            },
+          );
+          chrome.storage.sync.set({ blacklistedCompanies: list });
+        });
+      });
+    } else {
+      showSnackbar(base);
+    }
+  }
+
   // --- Filtering ---
   function filterJobs() {
     if (!settingsLoaded) return;
@@ -181,6 +341,8 @@
     const jobCards = document.querySelectorAll(JOB_CARD_SELECTOR);
 
     jobCards.forEach((jobCard) => {
+      ensureBlacklistButton(jobCard);
+
       // Collect all matching reasons — a card can match multiple filters.
       // When the global switch is off no reasons are collected, so every
       // card is unhidden below while still being marked as processed
@@ -453,7 +615,35 @@
       ".job-card-list__item[data-linkedin-filter-processed]" +
       "{ opacity: 1 !important; transition: opacity 0.2s ease-in-out; }" +
       '[data-linkedin-filter-hidden="true"]' +
-      "{ display: none !important; }";
+      "{ display: none !important; }" +
+      // Per-card blacklist button, revealed on card hover
+      ".linkedin-filter-blacklist-btn" +
+      "{ position: absolute; top: 8px; right: 44px; width: 28px; height: 28px;" +
+      " display: flex; align-items: center; justify-content: center;" +
+      " border: none; border-radius: 50%; background: transparent; color: #666;" +
+      " cursor: pointer; opacity: 0; padding: 0; z-index: 10;" +
+      " transition: opacity 0.15s ease, background 0.15s ease; }" +
+      "[data-linkedin-filter-processed]:hover .linkedin-filter-blacklist-btn," +
+      ".linkedin-filter-blacklist-btn:focus-visible" +
+      "{ opacity: 1; }" +
+      ".linkedin-filter-blacklist-btn:hover" +
+      "{ background: rgba(0, 0, 0, 0.08); color: #b74700; }" +
+      // Snackbar
+      "#linkedin-filter-snackbar" +
+      "{ position: fixed; bottom: 24px; left: 50%;" +
+      " transform: translateX(-50%) translateY(8px);" +
+      " background: #1d1d1d; color: #fff; padding: 10px 16px;" +
+      " border-radius: 8px; font-size: 13px; display: flex;" +
+      " align-items: center; gap: 16px; max-width: 480px;" +
+      " box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 2147483647;" +
+      " opacity: 0; pointer-events: none;" +
+      " transition: opacity 0.2s ease, transform 0.2s ease; }" +
+      "#linkedin-filter-snackbar.visible" +
+      "{ opacity: 1; transform: translateX(-50%) translateY(0);" +
+      " pointer-events: auto; }" +
+      "#linkedin-filter-snackbar button" +
+      "{ background: none; border: none; color: #70b5f9; font-weight: 600;" +
+      " font-size: 13px; cursor: pointer; padding: 4px; white-space: nowrap; }";
 
     // Safely append even at document_start
     (document.head || document.documentElement).appendChild(style);
@@ -462,6 +652,7 @@
   // --- Initialization ---
   function cleanup() {
     cleanupEventListeners();
+    hideSnackbar();
     if (domObserver) {
       domObserver.disconnect();
       domObserver = null;
