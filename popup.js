@@ -75,47 +75,26 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // --- Blacklist management ---
-  // One factory for both lists (companies, keywords): the add form,
-  // dedupe, storage persistence, and rendering are identical apart
-  // from element ids and the storage key.
+  // One factory for both lists (companies, keywords): dedupe, storage
+  // persistence, and chip rendering are identical apart from element
+  // ids and the storage key. Enter adds the typed entry, Escape clears.
   function setupListManager(opts) {
-    var addBtn = document.getElementById(opts.addBtnId);
-    var form = document.getElementById(opts.formId);
     var input = document.getElementById(opts.inputId);
-    var saveBtn = document.getElementById(opts.saveBtnId);
-    var cancelBtn = document.getElementById(opts.cancelBtnId);
     var container = document.getElementById(opts.listId);
-
-    addBtn.addEventListener("click", function () {
-      form.style.display = "block";
-      input.focus();
-      addBtn.style.display = "none";
-    });
-
-    cancelBtn.addEventListener("click", hideForm);
-
-    saveBtn.addEventListener("click", function () {
-      var value = input.value.trim();
-      if (value) {
-        addItem(value);
-        hideForm();
-      }
-    });
 
     // keydown, not keypress — Escape never fires keypress in modern browsers
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
-        saveBtn.click();
+        var value = input.value.trim();
+        if (value) {
+          addItem(value);
+          input.value = "";
+        }
       } else if (e.key === "Escape") {
-        hideForm();
+        input.value = "";
+        input.blur();
       }
     });
-
-    function hideForm() {
-      form.style.display = "none";
-      addBtn.style.display = "block";
-      input.value = "";
-    }
 
     function persist(items) {
       var update = {};
@@ -168,23 +147,26 @@ document.addEventListener("DOMContentLoaded", function () {
       container.innerHTML = "";
 
       items.forEach(function (value) {
-        var item = document.createElement("div");
-        item.className = "company-item";
+        var chip = document.createElement("span");
+        chip.className = "item-chip";
 
-        var nameSpan = document.createElement("span");
-        nameSpan.className = "company-name";
-        nameSpan.textContent = value;
+        var label = document.createElement("span");
+        label.className = "item-chip-label";
+        label.textContent = value;
+        label.title = value; // full text on hover when ellipsized
 
         var removeBtn = document.createElement("button");
-        removeBtn.className = "remove-btn";
+        removeBtn.type = "button";
+        removeBtn.className = "chip-remove";
+        removeBtn.title = "Remove";
         removeBtn.textContent = "×"; // multiplication sign as close icon
         removeBtn.addEventListener("click", function () {
           removeItem(value);
         });
 
-        item.appendChild(nameSpan);
-        item.appendChild(removeBtn);
-        container.appendChild(item);
+        chip.appendChild(label);
+        chip.appendChild(removeBtn);
+        container.appendChild(chip);
       });
     }
 
@@ -192,22 +174,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   var companyList = setupListManager({
-    addBtnId: "addCompanyBtn",
-    formId: "addCompanyForm",
     inputId: "companyInput",
-    saveBtnId: "saveCompanyBtn",
-    cancelBtnId: "cancelCompanyBtn",
     listId: "companiesList",
     storageKey: "blacklistedCompanies",
     emptyText: "No companies blacklisted",
   });
 
   var keywordList = setupListManager({
-    addBtnId: "addKeywordBtn",
-    formId: "addKeywordForm",
     inputId: "keywordInput",
-    saveBtnId: "saveKeywordBtn",
-    cancelBtnId: "cancelKeywordBtn",
     listId: "keywordsList",
     storageKey: "blacklistedKeywords",
     emptyText: "No keywords added",

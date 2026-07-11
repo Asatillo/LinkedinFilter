@@ -3,33 +3,20 @@
 body {
   width: 320px;
   max-height: 600px;
-  padding: 16px;
+  padding: 14px 16px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   background: #f8f9fa;
   overflow-y: auto;
 }
 
+/* --- Header --- */
 .header {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #e1e5e9;
-}
-
-.logo {
-  width: 24px;
-  height: 24px;
-  background: #0a66c2;
-  border-radius: 4px;
-  margin-right: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  font-size: 12px;
 }
 
 .logo-icon {
@@ -37,35 +24,32 @@ body {
 }
 
 .title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #1d1d1d;
 }
 
-.option {
+.master-switch {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #e1e5e9;
+  gap: 6px;
 }
 
-.option:last-child {
-  border-bottom: none;
-}
-
-.option-label {
-  font-weight: 500;
-  color: #1d1d1d;
-  flex: 1;
-}
-
-.option-description {
-  font-size: 12px;
+.switch-state {
+  font-size: 11px;
+  font-weight: 600;
   color: #666;
-  margin-top: 4px;
+  /* Fixed width so the toggle doesn't shift when ON <-> OFF */
+  min-width: 26px;
+  text-align: right;
 }
 
+body:not(.extension-off) .switch-state {
+  color: #0a66c2;
+}
+
+/* --- Toggles --- */
 .toggle {
   position: relative;
   width: 44px;
@@ -74,6 +58,7 @@ body {
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.3s;
+  flex-shrink: 0;
 }
 
 .toggle.active {
@@ -97,9 +82,150 @@ body {
   transform: translateX(20px);
 }
 
+.toggle.small {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+}
+
+.toggle.small::after {
+  width: 16px;
+  height: 16px;
+}
+
+.toggle.small.active::after {
+  transform: translateX(16px);
+}
+
+/* --- Status filter chips --- */
+.section-caption {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  flex: 1;
+  padding: 7px 0;
+  border-radius: 16px;
+  border: 1px solid #e1e5e9;
+  background: white;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.chip:hover {
+  border-color: #0a66c2;
+  color: #0a66c2;
+}
+
+.chip.active {
+  background: #0a66c2;
+  border-color: #0a66c2;
+  color: white;
+}
+
+/* --- Blacklist sections --- */
+.list-section {
+  margin-bottom: 14px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #1d1d1d;
+}
+
+.list-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  background: white;
+}
+
+.list-input:focus {
+  outline: none;
+  border-color: #0a66c2;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+.item-chip {
+  display: inline-flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 12px;
+  padding: 3px 4px 3px 10px;
+  font-size: 12px;
+  color: #1d1d1d;
+  max-width: 100%;
+}
+
+.item-chip-label {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-remove {
+  border: none;
+  background: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+  margin-left: 2px;
+}
+
+.chip-remove:hover {
+  color: #ff5252;
+}
+
+.empty-state {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+  padding: 2px 0;
+}
+
+/* --- Status --- */
 .status {
-  margin-top: 16px;
-  padding: 12px;
+  margin-top: 4px;
+  padding: 8px 12px;
   background: white;
   border-radius: 8px;
   border: 1px solid #e1e5e9;
@@ -120,178 +246,15 @@ body {
   color: #b74700;
 }
 
-.master-switch {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.switch-state {
-  font-size: 11px;
-  font-weight: 600;
-  color: #666;
-  /* Fixed width so the toggle doesn't shift when ON <-> OFF */
-  min-width: 26px;
-  text-align: right;
-}
-
-body:not(.extension-off) .switch-state {
-  color: #0a66c2;
-}
-
 /* Dim and lock the filter controls while the master switch is off */
-body.extension-off .option,
-body.extension-off .company-section {
+body.extension-off .section-caption,
+body.extension-off .filter-chips,
+body.extension-off .list-section {
   opacity: 0.5;
   pointer-events: none;
 }
 
-.company-section {
-  margin-top: 16px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-title {
-  font-weight: 600;
-  color: #1d1d1d;
-  font-size: 14px;
-}
-
-.section-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.add-btn {
-  background: #0a66c2;
-  color: white;
-  border: none;
-  border-radius: 16px;
-  padding: 4px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.add-btn:hover {
-  background: #084d91;
-}
-
-.add-form {
-  margin-bottom: 12px;
-  padding: 12px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e1e5e9;
-}
-
-.add-form input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  margin-bottom: 8px;
-  box-sizing: border-box;
-}
-
-.add-form input:focus {
-  outline: none;
-  border-color: #0a66c2;
-}
-
-.form-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.save-btn,
-.cancel-btn {
-  flex: 1;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  border: 1px solid;
-}
-
-.save-btn {
-  background: #0a66c2;
-  color: white;
-  border-color: #0a66c2;
-}
-
-.cancel-btn {
-  background: white;
-  color: #666;
-  border-color: #ddd;
-}
-
-.companies-list {
-  max-height: 120px;
-  overflow-y: auto;
-  border: 1px solid #e1e5e9;
-  border-radius: 6px;
-  background: white;
-  padding: 4px;
-}
-
-.company-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #f0f0f0;
-  border-radius: 0;
-  margin-bottom: 0;
-  min-height: 36px; /* Ensures consistent height */
-}
-
-.company-item:last-child {
-  border-bottom: none;
-}
-
-.company-item:hover {
-  background: #f8f9fa;
-}
-
-.remove-btn {
-  background: #ff6b6b;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-}
-
-.remove-btn:hover {
-  background: #ff5252;
-}
-
-.empty-state {
-  text-align: center;
-  color: #666;
-  font-size: 12px;
-  padding: 20px;
-  font-style: italic;
-}
-
+/* --- Footer --- */
 .footer {
   text-align: center;
   margin-top: 10px;

@@ -15,97 +15,56 @@
       </div>
     </div>
 
-    <div class="option">
-      <div>
-        <div class="option-label">Hide Applied Jobs</div>
-        <div class="option-description">Hide jobs marked as "Applied"</div>
-      </div>
-      <div class="toggle" id="hideApplied"></div>
+    <div class="section-caption">Hide jobs marked as</div>
+    <div class="filter-chips">
+      <button type="button" class="chip" id="hideApplied">Applied</button>
+      <button type="button" class="chip" id="hideViewed">Viewed</button>
+      <button type="button" class="chip" id="hidePromoted">Promoted</button>
     </div>
 
-    <div class="option">
-      <div>
-        <div class="option-label">Hide Viewed Jobs</div>
-        <div class="option-description">Hide jobs marked as "Viewed"</div>
-      </div>
-      <div class="toggle" id="hideViewed"></div>
-    </div>
-
-    <div class="option">
-      <div>
-        <div class="option-label">Hide Promoted Jobs</div>
-        <div class="option-description">Hide jobs marked as "Promoted"</div>
-      </div>
-      <div class="toggle" id="hidePromoted"></div>
-    </div>
-
-    <div class="company-section">
+    <div class="list-section">
       <div class="section-header">
         <span class="section-title">Company Blacklist</span>
-        <div class="section-controls">
-          <div
-            class="toggle"
-            id="hideCompanies"
-            title="Hide jobs from blacklisted companies"
-          ></div>
-          <button id="addCompanyBtn" class="add-btn">+ Add</button>
-        </div>
+        <div
+          class="toggle small"
+          id="hideCompanies"
+          title="Hide jobs from blacklisted companies"
+        ></div>
       </div>
-
-      <div id="addCompanyForm" class="add-form" style="display: none">
-        <input
-          type="text"
-          id="companyInput"
-          placeholder="Enter company name..."
-          maxlength="100"
-        />
-        <div class="form-buttons">
-          <button id="saveCompanyBtn" class="save-btn">Save</button>
-          <button id="cancelCompanyBtn" class="cancel-btn">Cancel</button>
-        </div>
-      </div>
-
-      <div id="companiesList" class="companies-list">
-        <!-- Companies will be populated here -->
-      </div>
+      <input
+        type="text"
+        id="companyInput"
+        class="list-input"
+        placeholder="Type a company, press Enter"
+        maxlength="100"
+      />
+      <div id="companiesList" class="chip-list"></div>
     </div>
 
-    <div class="company-section">
+    <div class="list-section">
       <div class="section-header">
         <span class="section-title">Title Keywords</span>
-        <div class="section-controls">
-          <div
-            class="toggle"
-            id="hideKeywords"
-            title="Hide jobs whose title contains a keyword"
-          ></div>
-          <button id="addKeywordBtn" class="add-btn">+ Add</button>
-        </div>
+        <div
+          class="toggle small"
+          id="hideKeywords"
+          title="Hide jobs whose title contains a keyword"
+        ></div>
       </div>
-
-      <div id="addKeywordForm" class="add-form" style="display: none">
-        <input
-          type="text"
-          id="keywordInput"
-          placeholder="Enter keyword, e.g. senior..."
-          maxlength="100"
-        />
-        <div class="form-buttons">
-          <button id="saveKeywordBtn" class="save-btn">Save</button>
-          <button id="cancelKeywordBtn" class="cancel-btn">Cancel</button>
-        </div>
-      </div>
-
-      <div id="keywordsList" class="companies-list">
-        <!-- Keywords will be populated here -->
-      </div>
+      <input
+        type="text"
+        id="keywordInput"
+        class="list-input"
+        placeholder="Type a keyword, press Enter"
+        maxlength="100"
+      />
+      <div id="keywordsList" class="chip-list"></div>
     </div>
 
     <div class="status" id="status">Extension ready</div>
 
     <div class="footer">
       <div class="footer-text">
-        Built with <span class="heart">❤️</span> by 
+        Built with <span class="heart">❤️</span> by
         <a href="https://github.com/Asatillo" target="_blank" class="author-link">Asat</a>
       </div>
     </div>
