@@ -32,6 +32,10 @@ body {
   font-size: 12px;
 }
 
+.logo-icon {
+  margin-right: 8px;
+}
+
 .title {
   font-size: 16px;
   font-weight: 600;
@@ -108,6 +112,39 @@ body {
   background: #f0f8ff;
   border-color: #0a66c2;
   color: #0a66c2;
+}
+
+.status.error {
+  background: #fdf1f0;
+  border-color: #b74700;
+  color: #b74700;
+}
+
+.master-switch {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.switch-state {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  /* Fixed width so the toggle doesn't shift when ON <-> OFF */
+  min-width: 26px;
+  text-align: right;
+}
+
+body:not(.extension-off) .switch-state {
+  color: #0a66c2;
+}
+
+/* Dim and lock the filter controls while the master switch is off */
+body.extension-off .option,
+body.extension-off .company-section {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .company-section {
