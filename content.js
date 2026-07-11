@@ -3,11 +3,18 @@
   "use strict";
 
   // --- Constants ---
+  // /jobs/search-results (SDUI search page): class names are hashed,
+  // but componentkey and role are stable. The classic selectors below it
+  // cover the older /jobs/search/ page.
+  const SEARCH_RESULTS_CARD_SELECTOR =
+    'div[role="button"][componentkey^="job-card-component-ref-"]';
+
   const JOB_CARD_SELECTOR = [
     "li[data-occludable-job-id]",
     ".job-card-container",
     ".base-search-card",
     ".job-card-list__item",
+    SEARCH_RESULTS_CARD_SELECTOR,
   ].join(", ");
 
   const FOOTER_ITEM_SELECTOR = [
@@ -91,6 +98,12 @@
         card.style.display = "";
         card.removeAttribute("data-linkedin-filter-hidden");
         card.removeAttribute("data-linkedin-filter-reason");
+      });
+    document
+      .querySelectorAll("[data-linkedin-filter-hidden-hr]")
+      .forEach(function (divider) {
+        divider.style.display = "";
+        divider.removeAttribute("data-linkedin-filter-hidden-hr");
       });
     document
       .querySelectorAll(".linkedin-filter-hidden-count")
@@ -208,8 +221,19 @@
     }
   }
 
+  function isSearchResultsCard(jobCard) {
+    return jobCard.matches?.(SEARCH_RESULTS_CARD_SELECTOR) || false;
+  }
+
   // --- Company detection ---
   function getCompanyName(jobCard) {
+    if (isSearchResultsCard(jobCard)) {
+      // /jobs/search-results has no semantic classes; the card renders its
+      // <p> elements in a fixed order: title, company, location, …
+      const ps = jobCard.querySelectorAll("p");
+      const text = ps.length > 1 ? ps[1].textContent.trim() : "";
+      if (text) return text;
+    }
     for (const selector of COMPANY_SELECTORS) {
       const element = jobCard.querySelector(selector);
       const text = element?.textContent?.trim();
@@ -220,12 +244,76 @@
 
   // --- Job title detection ---
   function getJobTitle(jobCard) {
+    if (isSearchResultsCard(jobCard)) {
+      // Most reliable source on /jobs/search-results: the per-card dismiss
+      // button, labelled "Dismiss <job title> job".
+      const dismiss = jobCard.querySelector('button[aria-label^="Dismiss "]');
+      const label = dismiss?.getAttribute("aria-label");
+      if (label) {
+        let title = label.slice("Dismiss ".length);
+        if (title.endsWith(" job")) title = title.slice(0, -" job".length);
+        title = title.trim();
+        if (title) return title;
+      }
+      // Fallback: the visible (aria-hidden) part of the title paragraph
+      const hiddenSpan = jobCard.querySelector('p span[aria-hidden="true"]');
+      const text = hiddenSpan?.textContent?.trim();
+      if (text) return text;
+    }
     for (const selector of TITLE_SELECTORS) {
       const element = jobCard.querySelector(selector);
       const text = element?.textContent?.trim();
       if (text) return text;
     }
     return null;
+  }
+
+  // --- Status labels ("Applied", "Viewed", "Promoted") ---
+  function getStatusTexts(jobCard) {
+    const texts = [];
+    jobCard.querySelectorAll(FOOTER_ITEM_SELECTOR).forEach(function (item) {
+      texts.push(item.textContent.trim());
+    });
+    if (texts.length === 0 && isSearchResultsCard(jobCard)) {
+      // Status labels are bare <p> elements in the metadata row. Skip the
+      // company paragraph so companies like "Applied Materials" never
+      // match the "Applied" status prefix.
+      const company = getCompanyName(jobCard);
+      jobCard.querySelectorAll("p").forEach(function (p) {
+        const text = p.textContent.trim();
+        if (!text || text.length > 40) return;
+        if (company && text === company) return;
+        texts.push(text);
+      });
+    }
+    return texts;
+  }
+
+  // --- Hide target ---
+  // On /jobs/search-results the role="button" card sits inside a styled
+  // wrapper that is a direct child of the lazy-column list; hiding only
+  // the inner card would leave an empty bordered shell behind.
+  function getHideTarget(jobCard) {
+    if (isSearchResultsCard(jobCard)) {
+      const wrapper = jobCard.closest('[data-testid="lazy-column"] > *');
+      if (wrapper) return wrapper;
+    }
+    return jobCard;
+  }
+
+  // /jobs/search-results renders an <hr> divider between cards as a sibling
+  // of the card wrapper; hide it together with the card so dividers don't
+  // stack.
+  function setDividerHidden(target, hidden) {
+    const divider = target.nextElementSibling;
+    if (!divider || divider.tagName !== "HR") return;
+    if (hidden) {
+      divider.style.display = "none";
+      divider.setAttribute("data-linkedin-filter-hidden-hr", "true");
+    } else if (divider.hasAttribute("data-linkedin-filter-hidden-hr")) {
+      divider.style.display = "";
+      divider.removeAttribute("data-linkedin-filter-hidden-hr");
+    }
   }
 
   // --- Snackbar ---
@@ -399,9 +487,7 @@
       if (settings.enabled) {
         // Check status labels. Prefix match, not equality: LinkedIn renders
         // variants like "Applied 2d ago".
-        const footerItems = jobCard.querySelectorAll(FOOTER_ITEM_SELECTOR);
-        footerItems.forEach((item) => {
-          const text = item.textContent.trim();
+        getStatusTexts(jobCard).forEach((text) => {
           if (settings.hideApplied && text.startsWith("Applied"))
             reasons.push("Applied");
           if (settings.hideViewed && text.startsWith("Viewed"))
@@ -453,14 +539,17 @@
       }
 
       const shouldHide = reasons.length > 0;
+      const target = getHideTarget(jobCard);
       if (shouldHide) {
-        jobCard.style.display = "none";
-        jobCard.setAttribute("data-linkedin-filter-hidden", "true");
-        jobCard.setAttribute("data-linkedin-filter-reason", reasons.join(", "));
+        target.style.display = "none";
+        target.setAttribute("data-linkedin-filter-hidden", "true");
+        target.setAttribute("data-linkedin-filter-reason", reasons.join(", "));
+        setDividerHidden(target, true);
       } else {
-        jobCard.style.display = "";
-        jobCard.removeAttribute("data-linkedin-filter-hidden");
-        jobCard.removeAttribute("data-linkedin-filter-reason");
+        target.style.display = "";
+        target.removeAttribute("data-linkedin-filter-hidden");
+        target.removeAttribute("data-linkedin-filter-reason");
+        setDividerHidden(target, false);
       }
       jobCard.setAttribute("data-linkedin-filter-processed", "true");
     });
@@ -479,11 +568,9 @@
   // text: LinkedIn updates the counter in place (pagination, live counts),
   // so any cached "original text" we restore would go stale.
   function updateJobCounter() {
-    const totalJobs = document.querySelectorAll(
-      "li[data-occludable-job-id]",
-    ).length;
+    const totalJobs = document.querySelectorAll(JOB_CARD_SELECTOR).length;
     const hiddenJobs = document.querySelectorAll(
-      'li[data-occludable-job-id][data-linkedin-filter-hidden="true"]',
+      '[data-linkedin-filter-hidden="true"]',
     ).length;
 
     const counters = document.querySelectorAll(COUNTER_SELECTOR);
@@ -502,6 +589,39 @@
         badge.remove();
       }
     });
+
+    updateSearchResultsCounter(totalJobs, hiddenJobs);
+  }
+
+  // /jobs/search-results has no counter/subtitle element to append to, so
+  // we render our own banner at the top of the results list. Re-inserted
+  // on every filter pass, so it survives LinkedIn's re-renders.
+  function updateSearchResultsCounter(totalJobs, hiddenJobs) {
+    if (!document.querySelector(SEARCH_RESULTS_CARD_SELECTOR)) return;
+
+    const list =
+      document.querySelector(
+        '[data-testid="lazy-column"][componentkey="SearchResultsMainContent"]',
+      ) || document.querySelector('[data-testid="lazy-column"]');
+    if (!list) return;
+
+    let banner = list.querySelector(
+      ":scope > .linkedin-filter-hidden-count",
+    );
+
+    if (hiddenJobs > 0 && totalJobs > 0) {
+      if (!banner) {
+        banner = document.createElement("div");
+        banner.className =
+          "linkedin-filter-hidden-count linkedin-filter-hidden-count--banner";
+        list.insertBefore(banner, list.firstChild);
+      }
+      banner.textContent =
+        hiddenJobs + (hiddenJobs === 1 ? " job" : " jobs") +
+        " hidden by filter";
+    } else if (banner) {
+      banner.remove();
+    }
   }
 
   // --- DOM observation ---
@@ -526,7 +646,7 @@
             node.matches?.(JOB_CARD_SELECTOR) ||
             node.querySelector?.(JOB_CARD_SELECTOR) ||
             node.querySelector?.(
-              ".jobs-search-results, .jobs-search-results-list",
+              ".jobs-search-results, .jobs-search-results-list, [data-testid='lazy-column']",
             )
           ) {
             shouldFilter = true;
@@ -672,16 +792,23 @@
       "li[data-occludable-job-id]:not([data-linkedin-filter-processed])," +
       ".job-card-container:not([data-linkedin-filter-processed])," +
       ".base-search-card:not([data-linkedin-filter-processed])," +
-      ".job-card-list__item:not([data-linkedin-filter-processed])" +
+      ".job-card-list__item:not([data-linkedin-filter-processed])," +
+      'div[role="button"][componentkey^="job-card-component-ref-"]:not([data-linkedin-filter-processed])' +
       "{ opacity: 0; animation: linkedin-filter-reveal 0.2s ease-in-out 3s forwards; }" +
       "@keyframes linkedin-filter-reveal { to { opacity: 1; } }" +
       "li[data-occludable-job-id][data-linkedin-filter-processed]," +
       ".job-card-container[data-linkedin-filter-processed]," +
       ".base-search-card[data-linkedin-filter-processed]," +
-      ".job-card-list__item[data-linkedin-filter-processed]" +
+      ".job-card-list__item[data-linkedin-filter-processed]," +
+      'div[role="button"][componentkey^="job-card-component-ref-"][data-linkedin-filter-processed]' +
       "{ opacity: 1 !important; transition: opacity 0.2s ease-in-out; }" +
       '[data-linkedin-filter-hidden="true"]' +
       "{ display: none !important; }" +
+      // Hidden-count banner on /jobs/search-results
+      ".linkedin-filter-hidden-count--banner" +
+      "{ padding: 8px 16px; font-size: 13px; font-weight: 600;" +
+      " color: #b74700; background: rgba(183, 71, 0, 0.06);" +
+      " border-bottom: 1px solid rgba(0, 0, 0, 0.08); }" +
       // Per-card blacklist button, revealed on card hover
       ".linkedin-filter-blacklist-btn" +
       "{ position: absolute; top: 8px; right: 44px; width: 28px; height: 28px;" +
