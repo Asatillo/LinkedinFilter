@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Job Filter",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Hide applied, promoted and viewed jobs on LinkedIn. Add companies to a blacklist to filter out jobs from those companies.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.linkedin.com/*"],

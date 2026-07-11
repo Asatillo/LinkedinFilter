@@ -164,6 +164,12 @@ body.extension-off .company-section {
   font-size: 14px;
 }
 
+.section-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .add-btn {
   background: #0a66c2;
   color: white;

@@ -1,8 +1,18 @@
 // LinkedIn Job Filter Popup Script
 document.addEventListener("DOMContentLoaded", function () {
   // --- Constants ---
-  var TOGGLE_IDS = ["hideApplied", "hideViewed", "hidePromoted", "hideCompanies"];
-  var STORAGE_KEYS = TOGGLE_IDS.concat(["blacklistedCompanies", "extensionEnabled"]);
+  var TOGGLE_IDS = [
+    "hideApplied",
+    "hideViewed",
+    "hidePromoted",
+    "hideCompanies",
+    "hideKeywords",
+  ];
+  var STORAGE_KEYS = TOGGLE_IDS.concat([
+    "blacklistedCompanies",
+    "blacklistedKeywords",
+    "extensionEnabled",
+  ]);
 
   var masterToggle = document.getElementById("extensionEnabled");
 
@@ -19,7 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
     masterToggle.classList.toggle("active", enabled);
     setDisabledUI(!enabled);
 
-    displayCompanies(result.blacklistedCompanies || []);
+    companyList.display(result.blacklistedCompanies || []);
+    keywordList.display(result.blacklistedKeywords || []);
     updateStatus();
   });
 
@@ -63,119 +74,144 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // --- Company management ---
-  var addCompanyBtn = document.getElementById("addCompanyBtn");
-  var addCompanyForm = document.getElementById("addCompanyForm");
-  var companyInput = document.getElementById("companyInput");
-  var saveCompanyBtn = document.getElementById("saveCompanyBtn");
-  var cancelCompanyBtn = document.getElementById("cancelCompanyBtn");
+  // --- Blacklist management ---
+  // One factory for both lists (companies, keywords): the add form,
+  // dedupe, storage persistence, and rendering are identical apart
+  // from element ids and the storage key.
+  function setupListManager(opts) {
+    var addBtn = document.getElementById(opts.addBtnId);
+    var form = document.getElementById(opts.formId);
+    var input = document.getElementById(opts.inputId);
+    var saveBtn = document.getElementById(opts.saveBtnId);
+    var cancelBtn = document.getElementById(opts.cancelBtnId);
+    var container = document.getElementById(opts.listId);
 
-  addCompanyBtn.addEventListener("click", function () {
-    addCompanyForm.style.display = "block";
-    companyInput.focus();
-    this.style.display = "none";
-  });
+    addBtn.addEventListener("click", function () {
+      form.style.display = "block";
+      input.focus();
+      addBtn.style.display = "none";
+    });
 
-  cancelCompanyBtn.addEventListener("click", hideAddForm);
+    cancelBtn.addEventListener("click", hideForm);
 
-  saveCompanyBtn.addEventListener("click", function () {
-    var companyName = companyInput.value.trim();
-    if (companyName) {
-      addCompany(companyName);
-      hideAddForm();
-    }
-  });
-
-  // keydown, not keypress — Escape never fires keypress in modern browsers
-  companyInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      saveCompanyBtn.click();
-    } else if (e.key === "Escape") {
-      hideAddForm();
-    }
-  });
-
-  function hideAddForm() {
-    addCompanyForm.style.display = "none";
-    addCompanyBtn.style.display = "block";
-    companyInput.value = "";
-  }
-
-  function addCompany(companyName) {
-    chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
-      var companies = result.blacklistedCompanies || [];
-
-      // Avoid duplicates (case insensitive)
-      var exists = companies.some(function (c) {
-        return c.toLowerCase() === companyName.toLowerCase();
-      });
-
-      if (!exists) {
-        companies.push(companyName);
-        chrome.storage.sync.set({ blacklistedCompanies: companies }, function () {
-          if (chrome.runtime.lastError) {
-            // Most likely the 8KB-per-item sync quota — surface it
-            showSaveError(chrome.runtime.lastError.message);
-            return;
-          }
-          displayCompanies(companies);
-          updateStatus();
-        });
+    saveBtn.addEventListener("click", function () {
+      var value = input.value.trim();
+      if (value) {
+        addItem(value);
+        hideForm();
       }
     });
-  }
 
-  function removeCompany(companyName) {
-    chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
-      var companies = result.blacklistedCompanies || [];
-      var updated = companies.filter(function (c) {
-        return c !== companyName;
-      });
+    // keydown, not keypress — Escape never fires keypress in modern browsers
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        saveBtn.click();
+      } else if (e.key === "Escape") {
+        hideForm();
+      }
+    });
 
-      chrome.storage.sync.set({ blacklistedCompanies: updated }, function () {
+    function hideForm() {
+      form.style.display = "none";
+      addBtn.style.display = "block";
+      input.value = "";
+    }
+
+    function persist(items) {
+      var update = {};
+      update[opts.storageKey] = items;
+      chrome.storage.sync.set(update, function () {
         if (chrome.runtime.lastError) {
+          // Most likely the 8KB-per-item sync quota — surface it
           showSaveError(chrome.runtime.lastError.message);
           return;
         }
-        displayCompanies(updated);
+        display(items);
         updateStatus();
       });
-    });
-  }
-
-  // Built programmatically with textContent/closures rather than innerHTML:
-  // company names are user input and may contain &, <, ", etc.
-  function displayCompanies(companies) {
-    var container = document.getElementById("companiesList");
-
-    if (companies.length === 0) {
-      container.innerHTML = '<div class="empty-state">No companies blacklisted</div>';
-      return;
     }
 
-    container.innerHTML = "";
+    function addItem(value) {
+      chrome.storage.sync.get([opts.storageKey], function (result) {
+        var items = result[opts.storageKey] || [];
 
-    companies.forEach(function (company) {
-      var item = document.createElement("div");
-      item.className = "company-item";
+        // Avoid duplicates (case insensitive)
+        var exists = items.some(function (item) {
+          return item.toLowerCase() === value.toLowerCase();
+        });
 
-      var nameSpan = document.createElement("span");
-      nameSpan.className = "company-name";
-      nameSpan.textContent = company; // textContent is XSS-safe
-
-      var removeBtn = document.createElement("button");
-      removeBtn.className = "remove-btn";
-      removeBtn.textContent = "\u00d7"; // ×
-      // Use closure to capture the raw company name — no data attributes needed
-      removeBtn.addEventListener("click", function () {
-        removeCompany(company);
+        if (!exists) {
+          items.push(value);
+          persist(items);
+        }
       });
+    }
 
-      item.appendChild(nameSpan);
-      item.appendChild(removeBtn);
-      container.appendChild(item);
-    });
+    function removeItem(value) {
+      chrome.storage.sync.get([opts.storageKey], function (result) {
+        var items = (result[opts.storageKey] || []).filter(function (item) {
+          return item !== value;
+        });
+        persist(items);
+      });
+    }
+
+    // Built programmatically with textContent/closures rather than
+    // innerHTML: entries are user input and may contain &, <, ", etc.
+    function display(items) {
+      if (items.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' + opts.emptyText + "</div>";
+        return;
+      }
+
+      container.innerHTML = "";
+
+      items.forEach(function (value) {
+        var item = document.createElement("div");
+        item.className = "company-item";
+
+        var nameSpan = document.createElement("span");
+        nameSpan.className = "company-name";
+        nameSpan.textContent = value;
+
+        var removeBtn = document.createElement("button");
+        removeBtn.className = "remove-btn";
+        removeBtn.textContent = "×"; // multiplication sign as close icon
+        removeBtn.addEventListener("click", function () {
+          removeItem(value);
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(removeBtn);
+        container.appendChild(item);
+      });
+    }
+
+    return { display: display };
   }
+
+  var companyList = setupListManager({
+    addBtnId: "addCompanyBtn",
+    formId: "addCompanyForm",
+    inputId: "companyInput",
+    saveBtnId: "saveCompanyBtn",
+    cancelBtnId: "cancelCompanyBtn",
+    listId: "companiesList",
+    storageKey: "blacklistedCompanies",
+    emptyText: "No companies blacklisted",
+  });
+
+  var keywordList = setupListManager({
+    addBtnId: "addKeywordBtn",
+    formId: "addKeywordForm",
+    inputId: "keywordInput",
+    saveBtnId: "saveKeywordBtn",
+    cancelBtnId: "cancelKeywordBtn",
+    listId: "keywordsList",
+    storageKey: "blacklistedKeywords",
+    emptyText: "No keywords added",
+  });
 
   // Content scripts pick up changes via chrome.storage.onChanged in every
   // tab, so no explicit notification message is needed after a save.

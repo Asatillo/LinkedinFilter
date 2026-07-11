@@ -28,6 +28,17 @@
     "[data-test-job-company-name]",
   ];
 
+  const TITLE_SELECTORS = [
+    ".job-card-list__title--link span[aria-hidden='true']",
+    ".job-card-list__title--link",
+    ".job-card-list__title",
+    ".job-card-container__link span[aria-hidden='true']",
+    ".job-card-container__link",
+    ".artdeco-entity-lockup__title",
+    ".base-search-card__title",
+    "[data-test-job-title]",
+  ];
+
   const COUNTER_SELECTOR = [
     ".jobs-search-results-list__subtitle",
     ".jobs-search-results__subtitle",
@@ -97,15 +108,35 @@
   }
 
   // Set up a keep-alive port: when the extension reloads / is disabled,
-  // onDisconnect fires ONCE and we tear everything down — zero polling.
+  // onDisconnect fires and we tear everything down — zero polling.
+  //
+  // CAUTION: onDisconnect ALSO fires when Chrome terminates the idle
+  // service worker (~30s of inactivity), which does NOT invalidate this
+  // context. Tearing down on that signal alone permanently disables
+  // filtering in the tab, so verify the context first and simply
+  // reconnect (waking the worker) when it's still alive.
   function setupKeepAlivePort() {
+    if (_contextInvalid) return;
+
     try {
       var port = chrome.runtime.connect({ name: "linkedin-filter-keepalive" });
       port.onDisconnect.addListener(function () {
-        teardownCompletely();
+        var stillValid = false;
+        try {
+          stillValid = !!(chrome.runtime && chrome.runtime.id);
+        } catch {
+          stillValid = false;
+        }
+
+        if (stillValid) {
+          setTimeout(setupKeepAlivePort, 1000);
+        } else {
+          teardownCompletely();
+        }
       });
     } catch {
-      _contextInvalid = true;
+      // connect() itself threw — the context really is gone
+      teardownCompletely();
     }
   }
 
@@ -124,7 +155,9 @@
     hideViewed: false,
     hideCompanies: false,
     hidePromoted: false,
+    hideKeywords: false,
     blacklistedCompanies: [],
+    blacklistedKeywords: [],
   };
   let settingsLoaded = false;
   let filterDebounceTimer = null;
@@ -145,7 +178,9 @@
           "hideViewed",
           "hideCompanies",
           "hidePromoted",
+          "hideKeywords",
           "blacklistedCompanies",
+          "blacklistedKeywords",
         ],
         function (result) {
           if (chrome.runtime.lastError) {
@@ -160,7 +195,9 @@
             hideViewed: result.hideViewed || false,
             hideCompanies: result.hideCompanies || false,
             hidePromoted: result.hidePromoted || false,
+            hideKeywords: result.hideKeywords || false,
             blacklistedCompanies: result.blacklistedCompanies || [],
+            blacklistedKeywords: result.blacklistedKeywords || [],
           };
           settingsLoaded = true;
           filterJobs();
@@ -174,6 +211,16 @@
   // --- Company detection ---
   function getCompanyName(jobCard) {
     for (const selector of COMPANY_SELECTORS) {
+      const element = jobCard.querySelector(selector);
+      const text = element?.textContent?.trim();
+      if (text) return text;
+    }
+    return null;
+  }
+
+  // --- Job title detection ---
+  function getJobTitle(jobCard) {
+    for (const selector of TITLE_SELECTORS) {
       const element = jobCard.querySelector(selector);
       const text = element?.textContent?.trim();
       if (text) return text;
@@ -381,6 +428,25 @@
             });
             if (isBlacklisted) {
               reasons.push("Blacklisted: " + companyName);
+            }
+          }
+        }
+
+        // Check title keywords (case-insensitive substring match)
+        if (
+          settings.hideKeywords &&
+          settings.blacklistedKeywords.length > 0
+        ) {
+          const title = getJobTitle(jobCard);
+          if (title) {
+            const titleLower = title.toLowerCase();
+            const matched = settings.blacklistedKeywords.find((kw) => {
+              const kwLower = kw.toLowerCase().trim();
+              // An empty entry would match every title via includes("")
+              return kwLower && titleLower.includes(kwLower);
+            });
+            if (matched) {
+              reasons.push("Keyword: " + matched);
             }
           }
         }
