@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "LinkedIn Job Filter",
+    "description": "Extension name. Kept in English in all locales (brand name)."
+  },
+  "appDesc": {
+    "message": "Filter LinkedIn jobs: hide applied, viewed and promoted posts, blacklist companies and title keywords with one click.",
+    "description": "Manifest description, max 132 characters."
+  }
+}

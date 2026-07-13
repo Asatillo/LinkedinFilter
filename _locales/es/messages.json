@@ -1,0 +1,8 @@
+{
+  "appName": {
+    "message": "LinkedIn Job Filter"
+  },
+  "appDesc": {
+    "message": "Filtra empleos de LinkedIn: oculta ofertas solicitadas, vistas y promocionadas; bloquea empresas y palabras clave del título."
+  }
+}
