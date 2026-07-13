@@ -579,6 +579,7 @@
     if (!settingsLoaded) return;
 
     const jobCards = document.querySelectorAll(JOB_CARD_SELECTOR);
+    let newlyHidden = 0;
 
     jobCards.forEach((jobCard) => {
       // On the classic UI, JOB_CARD_SELECTOR matches nested elements — the
@@ -660,6 +661,9 @@
       const shouldHide = reasons.length > 0;
       const target = getHideTarget(jobCard);
       if (shouldHide) {
+        if (target.getAttribute("data-linkedin-filter-hidden") !== "true") {
+          newlyHidden++;
+        }
         target.style.display = "none";
         target.setAttribute("data-linkedin-filter-hidden", "true");
         target.setAttribute("data-linkedin-filter-reason", reasons.join(", "));
@@ -673,7 +677,29 @@
       jobCard.setAttribute("data-linkedin-filter-processed", "true");
     });
 
+    recordHiddenJobs(newlyHidden);
     updateJobCounter();
+  }
+
+  // --- Lifetime hidden counter (chrome.storage.local) ---
+  // Feeds the popup's review ask. Incremented only when a card transitions
+  // to hidden, so filter re-runs don't inflate it — but LinkedIn's virtual
+  // list recycles DOM nodes, so a job re-rendered after scrolling can be
+  // counted again. Approximate by design; display only. storage.local, not
+  // sync: writes happen on filter passes and would burn sync's write quota.
+  function recordHiddenJobs(count) {
+    if (count <= 0 || !isExtensionContextValid()) return;
+    try {
+      chrome.storage.local.get({ totalHiddenJobs: 0 }, function (result) {
+        if (chrome.runtime.lastError) return;
+        chrome.storage.local.set({
+          totalHiddenJobs: (result.totalHiddenJobs || 0) + count,
+        });
+      });
+    } catch {
+      // Context died between the validity check and the call; the
+      // keep-alive port's onDisconnect handles teardown.
+    }
   }
 
   function debouncedFilterJobs() {

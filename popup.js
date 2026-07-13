@@ -190,6 +190,46 @@ document.addEventListener("DOMContentLoaded", function () {
   // Content scripts pick up changes via chrome.storage.onChanged in every
   // tab, so no explicit notification message is needed after a save.
 
+  // --- Review ask ---
+  // Shown once the content script's lifetime hidden-jobs counter
+  // (chrome.storage.local, approximate) crosses the threshold, unless the
+  // user already dismissed it. Dismissal lives in storage.sync so the ask
+  // never comes back on another computer. Clicking the rate link counts as
+  // acting on it and dismisses too.
+  var REVIEW_ASK_THRESHOLD = 50;
+
+  (function initReviewAsk() {
+    var box = document.getElementById("reviewAsk");
+
+    chrome.storage.sync.get(["reviewAskDismissed"], function (syncResult) {
+      if (chrome.runtime.lastError || syncResult.reviewAskDismissed) return;
+
+      chrome.storage.local.get(["totalHiddenJobs"], function (localResult) {
+        if (chrome.runtime.lastError) return;
+        var count = localResult.totalHiddenJobs || 0;
+        if (count < REVIEW_ASK_THRESHOLD) return;
+        document.getElementById("reviewAskText").textContent =
+          count.toLocaleString() + " jobs hidden for you. Enjoying it?";
+        box.classList.add("visible");
+      });
+    });
+
+    function dismissForever() {
+      box.classList.remove("visible");
+      // Best effort: if the write fails the ask simply reappears next time
+      chrome.storage.sync.set({ reviewAskDismissed: true }, function () {
+        void chrome.runtime.lastError;
+      });
+    }
+
+    document
+      .getElementById("reviewAskDismiss")
+      .addEventListener("click", dismissForever);
+    document
+      .getElementById("reviewAskLink")
+      .addEventListener("click", dismissForever);
+  })();
+
   function showSaveError(message) {
     var status = document.getElementById("status");
     status.textContent = "Couldn't save settings: " + (message || "unknown error");
