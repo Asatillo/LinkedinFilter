@@ -246,7 +246,11 @@
   function getJobTitle(jobCard) {
     if (isSearchResultsCard(jobCard)) {
       // Most reliable source on /jobs/search-results: the per-card dismiss
-      // button, labelled "Dismiss <job title> job".
+      // button, labelled "Dismiss <job title> job". English-only by design —
+      // localizing every "Dismiss …" sentence pattern is not worth it; on
+      // non-English UIs the selector simply never matches and the structural
+      // fallback below (first <p> = title, per the fixed SDUI card layout)
+      // takes over.
       const dismiss = jobCard.querySelector('button[aria-label^="Dismiss "]');
       const label = dismiss?.getAttribute("aria-label");
       if (label) {
@@ -269,6 +273,107 @@
   }
 
   // --- Status labels ("Applied", "Viewed", "Promoted") ---
+  // LinkedIn renders these in the user's LinkedIn UI language (a linkedin.com
+  // setting, independent of Chrome's language), so every LinkedIn-supported
+  // language needs an entry. All entries are lowercase; some are stems
+  // ("visualizzat" covers visualizzato/visualizzata) matched with includes()
+  // so grammatical suffixes and word order ("Applied 2d ago" vs German
+  // "Vor 2 Wochen beworben") don't matter. includes() is safe ONLY because
+  // getStatusTexts feeds it status/metadata rows and never the company name —
+  // but SDUI metadata rows DO include the location, so never add an entry
+  // that can occur in a place name (e.g. Spanish "vista" would hide every
+  // job in Chula Vista; "visto" is kept, "vista" deliberately isn't).
+  // "promoted" list verified against winterhazel/hide-promoted-jobs
+  // langs.json (cross-checked with canklot/Linkedin_Promoted_Hider);
+  // "applied" list seeded from Robert01101101/hide-applied-jobs-linkedin.
+  // Entries marked (unverified) are best-effort — confirm against the live
+  // UI when a report comes in.
+  const STATUS_LABELS = {
+    applied: [
+      "applied", // en
+      "solicitado", // es (also matches "Solicitados")
+      "candidature envoyée", // fr
+      "beworben", // de
+      "applicato", // it (verified live UI 2026-07: "Applicato · 1 giorno fa")
+      "candidature inoltrate", // it classic UI (verified live 2026-07)
+      "candidatura inoltrata", // it singular variant
+      "candidatura inviata", // it variant (older UI)
+      "candidatou-se", // pt classic UI (verified live 2026-07)
+      "candidatura enviada", // pt variant
+      "sollicitatie verzonden", // nl
+      "ansökt", // sv
+      "søgt", // da
+      "søkt", // no
+      "haettu", // fi
+      "zaaplikowano", // pl
+      "přihlášeno", // cs
+      "jelentkezett", // hu
+      "başvurulan", // tr stem (verified live 2026-07: "Başvurulanlar"; also covers "başvurulan")
+      "başvuruldu", // tr variant (unverified)
+      "candidatură depusă", // ro (verified live 2026-07: "Candidatură depusă · cu 1 zi în urmă")
+      "candidaturi depuse", // ro plural variant
+      "aplicat", // ro variant (unverified)
+      "已应用", // zh-CN (verified live 2026-07: "已应用 · 的时间: 1 天前")
+      "已申请", // zh-CN variant (unverified)
+      "заявка подана", // ru classic UI (verified live 2026-07)
+      "выполнено", // ru SDUI (verified live 2026-07: "Выполнено · 1 день назад")
+      "отклик отправлен", // ru variant (unverified)
+      "вы откликнулись", // ru variant (unverified)
+    ],
+    viewed: [
+      "viewed", // en
+      "visto", // es
+      "consulté", // fr (covers Consulté/Consultée)
+      "angesehen", // de
+      "visualizzat", // it (visualizzato/visualizzata)
+      "visualizad", // pt (visualizada/visualizado)
+      "bekeken", // nl
+      "wyświetlon", // pl (wyświetlone/wyświetlona)
+      "megtekintve", // hu
+      "görüntülen", // tr stem (verified live 2026-07: "Görüntülenen"; also covers "görüntülendi")
+      "vizualizat", // ro (also matches "vizualizată")
+      "просмотрен", // ru (просмотрено/просмотрена)
+      "已查看", // zh-CN
+      "已浏览", // zh-CN variant
+    ],
+    promoted: [
+      "promoted", // en
+      "الترويج", // ar
+      "propagováno", // cs
+      "promoveret", // da
+      "anzeige", // de
+      "promocionado", // es
+      "promu(e)", // fr
+      "sponsorisé", // fr variant
+      "प्रमोट किया गया", // hi
+      "dipromosikan", // id/ms
+      "promosso", // it
+      "プロモーション", // ja
+      "프로모션", // ko
+      "gepromoot", // nl
+      "promotert", // no
+      "promowana oferta pracy", // pl
+      "promovida", // pt
+      "promovat", // ro
+      "продвигается", // ru
+      "marknadsfört", // sv
+      "โปรโมทแล้ว", // th
+      "nai-promote", // tl
+      "na-promote", // tl variant
+      "öne çıkarılan içerik", // tr
+      "tanıtılan", // tr variant
+      "tanıtıldı", // tr variant
+      "просувається", // uk
+      "广告", // zh
+      "推广", // zh variant
+      "已宣傳", // zh-TW
+    ],
+  };
+
+  function matchesStatus(statusTextLower, labels) {
+    return labels.some((label) => statusTextLower.includes(label));
+  }
+
   function getStatusTexts(jobCard) {
     const texts = [];
     jobCard.querySelectorAll(FOOTER_ITEM_SELECTOR).forEach(function (item) {
@@ -476,6 +581,17 @@
     const jobCards = document.querySelectorAll(JOB_CARD_SELECTOR);
 
     jobCards.forEach((jobCard) => {
+      // On the classic UI, JOB_CARD_SELECTOR matches nested elements — the
+      // <li data-occludable-job-id> AND its inner .job-card-container.
+      // Process only the outermost match so a card can't be hidden, counted,
+      // or given a blacklist button twice. The skipped inner element must
+      // still be marked processed or the anti-flicker CSS holds it at
+      // opacity 0 until the fail-safe reveal.
+      if (jobCard.parentElement?.closest(JOB_CARD_SELECTOR)) {
+        jobCard.setAttribute("data-linkedin-filter-processed", "true");
+        return;
+      }
+
       ensureBlacklistButton(jobCard);
 
       // Collect all matching reasons — a card can match multiple filters.
@@ -485,14 +601,17 @@
       const reasons = [];
 
       if (settings.enabled) {
-        // Check status labels. Prefix match, not equality: LinkedIn renders
-        // variants like "Applied 2d ago".
+        // Check status labels against every LinkedIn UI language (see
+        // STATUS_LABELS). Substring match, not prefix/equality: LinkedIn
+        // renders variants like "Applied 2d ago" and some languages put the
+        // label last ("Vor 2 Wochen beworben").
         getStatusTexts(jobCard).forEach((text) => {
-          if (settings.hideApplied && text.startsWith("Applied"))
+          const lower = text.toLowerCase();
+          if (settings.hideApplied && matchesStatus(lower, STATUS_LABELS.applied))
             reasons.push("Applied");
-          if (settings.hideViewed && text.startsWith("Viewed"))
+          if (settings.hideViewed && matchesStatus(lower, STATUS_LABELS.viewed))
             reasons.push("Viewed");
-          if (settings.hidePromoted && text.startsWith("Promoted"))
+          if (settings.hidePromoted && matchesStatus(lower, STATUS_LABELS.promoted))
             reasons.push("Promoted");
         });
 
@@ -568,10 +687,28 @@
   // text: LinkedIn updates the counter in place (pagination, live counts),
   // so any cached "original text" we restore would go stale.
   function updateJobCounter() {
-    const totalJobs = document.querySelectorAll(JOB_CARD_SELECTOR).length;
-    const hiddenJobs = document.querySelectorAll(
-      '[data-linkedin-filter-hidden="true"]',
-    ).length;
+    // Classic pages also render "discovery" job cards (similar jobs, jobs
+    // for you, hiring in your network) below the main results. Those are
+    // filtered like any other card, but the counter sits next to LinkedIn's
+    // "N results" header, so it must only count the main list — its cards
+    // are the li[data-occludable-job-id] items, which discovery cards lack.
+    // Pages without occludable <li>s (SDUI, logged-out layouts) fall back
+    // to counting every card.
+    const mainListCards = document.querySelectorAll(
+      "li[data-occludable-job-id]",
+    );
+    let totalJobs, hiddenJobs;
+    if (mainListCards.length > 0) {
+      totalJobs = mainListCards.length;
+      hiddenJobs = document.querySelectorAll(
+        'li[data-occludable-job-id][data-linkedin-filter-hidden="true"]',
+      ).length;
+    } else {
+      totalJobs = document.querySelectorAll(JOB_CARD_SELECTOR).length;
+      hiddenJobs = document.querySelectorAll(
+        '[data-linkedin-filter-hidden="true"]',
+      ).length;
+    }
 
     const counters = document.querySelectorAll(COUNTER_SELECTOR);
 
