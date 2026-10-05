@@ -1,0 +1,14 @@
+{
+  "name": "linkedin-job-filter",
+  "version": "2.3.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/",
+    "check": "node --check content.js && node --check popup.js && node --check settings-store.js && node --check background.js",
+    "package": "node scripts/package.js"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "jsdom": "^24.1.3"
+  }
+}
