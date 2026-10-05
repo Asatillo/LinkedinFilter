@@ -9,17 +9,29 @@
   const SEARCH_RESULTS_CARD_SELECTOR =
     'div[role="button"][componentkey^="job-card-component-ref-"]';
 
+  // /jobs home feed: SDUI again (hashed classes), but cards are <a> links
+  // into /jobs/search-results/ carrying the job id in currentJobId=.
+  // Non-card links in the feed (recent searches, "Show all") lack that
+  // param, so the href pair below identifies actual job cards.
+  const HOME_FEED_CARD_SELECTOR =
+    'a[componentkey][href*="/jobs/search-results/"][href*="currentJobId="]';
+
+  const SDUI_CARD_SELECTOR =
+    SEARCH_RESULTS_CARD_SELECTOR + ", " + HOME_FEED_CARD_SELECTOR;
+
   const JOB_CARD_SELECTOR = [
     "li[data-occludable-job-id]",
     ".job-card-container",
     ".base-search-card",
     ".job-card-list__item",
     SEARCH_RESULTS_CARD_SELECTOR,
+    HOME_FEED_CARD_SELECTOR,
   ].join(", ");
 
   const FOOTER_ITEM_SELECTOR = [
     ".job-card-container__footer-item",
     ".job-card-container__footer .artdeco-inline-feedback",
+    ".job-card-container__apply-method",
   ].join(", ");
 
   const COMPANY_SELECTORS = [
@@ -28,6 +40,8 @@
     ".job-card-container__primary-description",
     ".job-card-container__company-name",
     ".job-card-container__link-subtitle",
+    // legacy / logged-out layouts — unverified since 2.2,
+    // debugLinkedInFilter reports which selector hits
     ".base-search-card__subtitle a",
     ".base-search-card__subtitle span",
     ".base-search-card__subtitle",
@@ -42,17 +56,19 @@
     ".job-card-container__link span[aria-hidden='true']",
     ".job-card-container__link",
     ".artdeco-entity-lockup__title",
+    // legacy / logged-out layouts — unverified since 2.2,
+    // debugLinkedInFilter reports which selector hits
     ".base-search-card__title",
     "[data-test-job-title]",
   ];
 
-  const COUNTER_SELECTOR = [
+  const COUNTER_SELECTORS = [
     ".jobs-search-results-list__subtitle",
     ".jobs-search-results__subtitle",
     ".jobs-search-two-pane__header-description",
     ".jobs-search-results-list__text",
     ".jobs-search-results__text",
-  ].join(", ");
+  ];
 
   const FILTER_DEBOUNCE_MS = 200;
   const SCROLL_DEBOUNCE_MS = 300;
@@ -168,6 +184,7 @@
     hideViewed: false,
     hideCompanies: false,
     hidePromoted: false,
+    hideEasyApply: false,
     hideKeywords: false,
     blacklistedCompanies: [],
     blacklistedKeywords: [],
@@ -184,68 +201,82 @@
     if (_contextInvalid) return;
 
     try {
-      chrome.storage.sync.get(
-        [
-          "extensionEnabled",
-          "hideApplied",
-          "hideViewed",
-          "hideCompanies",
-          "hidePromoted",
-          "hideKeywords",
-          "blacklistedCompanies",
-          "blacklistedKeywords",
-        ],
-        function (result) {
-          if (chrome.runtime.lastError) {
-            console.warn("LinkedIn Filter:", chrome.runtime.lastError.message);
-            return;
-          }
+      // get(null) fetches everything: the lists are chunked across
+      // sibling keys (see settings-store.js).
+      chrome.storage.sync.get(null, function (result) {
+        if (chrome.runtime.lastError) {
+          console.warn("LinkedIn Filter:", chrome.runtime.lastError.message);
+          return;
+        }
 
-          settings = {
-            // Default ON: only an explicit false disables the extension
-            enabled: result.extensionEnabled !== false,
-            hideApplied: result.hideApplied || false,
-            hideViewed: result.hideViewed || false,
-            hideCompanies: result.hideCompanies || false,
-            hidePromoted: result.hidePromoted || false,
-            hideKeywords: result.hideKeywords || false,
-            blacklistedCompanies: result.blacklistedCompanies || [],
-            blacklistedKeywords: result.blacklistedKeywords || [],
-          };
-          settingsLoaded = true;
-          filterJobs();
-        },
-      );
+        const store = window.LinkedInFilterSettings;
+        const s = store
+          ? store.assembleSettings(result)
+          : // Fallback if settings-store.js didn't load: read the
+            // unchunked keys directly.
+            {
+              extensionEnabled: result.extensionEnabled !== false,
+              hideApplied: !!result.hideApplied,
+              hideViewed: !!result.hideViewed,
+              hidePromoted: !!result.hidePromoted,
+              hideEasyApply: !!result.hideEasyApply,
+              hideCompanies: !!result.hideCompanies,
+              hideKeywords: !!result.hideKeywords,
+              blacklistedCompanies: result.blacklistedCompanies || [],
+              blacklistedKeywords: result.blacklistedKeywords || [],
+            };
+
+        settings = {
+          // Default ON: only an explicit false disables the extension
+          enabled: s.extensionEnabled !== false,
+          hideApplied: !!s.hideApplied,
+          hideViewed: !!s.hideViewed,
+          hideCompanies: !!s.hideCompanies,
+          hidePromoted: !!s.hidePromoted,
+          hideEasyApply: !!s.hideEasyApply,
+          hideKeywords: !!s.hideKeywords,
+          blacklistedCompanies: s.blacklistedCompanies,
+          blacklistedKeywords: s.blacklistedKeywords,
+        };
+        settingsLoaded = true;
+        filterJobs();
+      });
     } catch (error) {
       console.warn("LinkedIn Filter: Error loading settings:", error.message);
     }
   }
 
-  function isSearchResultsCard(jobCard) {
-    return jobCard.matches?.(SEARCH_RESULTS_CARD_SELECTOR) || false;
+  function isSduiCard(jobCard) {
+    return jobCard.matches?.(SDUI_CARD_SELECTOR) || false;
   }
 
   // --- Company detection ---
-  function getCompanyName(jobCard) {
-    if (isSearchResultsCard(jobCard)) {
-      // /jobs/search-results has no semantic classes; the card renders its
+  // findCompany/findTitle return { text, source } so debugLinkedInFilter
+  // can report which selector produced each value.
+  function findCompany(jobCard) {
+    if (isSduiCard(jobCard)) {
+      // SDUI pages have no semantic classes; the card renders its
       // <p> elements in a fixed order: title, company, location, …
       const ps = jobCard.querySelectorAll("p");
       const text = ps.length > 1 ? ps[1].textContent.trim() : "";
-      if (text) return text;
+      if (text) return { text, source: "sdui:p[1]" };
     }
     for (const selector of COMPANY_SELECTORS) {
       const element = jobCard.querySelector(selector);
       const text = element?.textContent?.trim();
-      if (text) return text;
+      if (text) return { text, source: selector };
     }
-    return null;
+    return { text: null, source: null };
+  }
+
+  function getCompanyName(jobCard) {
+    return findCompany(jobCard).text;
   }
 
   // --- Job title detection ---
-  function getJobTitle(jobCard) {
-    if (isSearchResultsCard(jobCard)) {
-      // Most reliable source on /jobs/search-results: the per-card dismiss
+  function findTitle(jobCard) {
+    if (isSduiCard(jobCard)) {
+      // Most reliable source on SDUI cards: the per-card dismiss
       // button, labelled "Dismiss <job title> job". English-only by design —
       // localizing every "Dismiss …" sentence pattern is not worth it; on
       // non-English UIs the selector simply never matches and the structural
@@ -257,19 +288,23 @@
         let title = label.slice("Dismiss ".length);
         if (title.endsWith(" job")) title = title.slice(0, -" job".length);
         title = title.trim();
-        if (title) return title;
+        if (title) return { text: title, source: "sdui:dismiss-aria" };
       }
       // Fallback: the visible (aria-hidden) part of the title paragraph
       const hiddenSpan = jobCard.querySelector('p span[aria-hidden="true"]');
       const text = hiddenSpan?.textContent?.trim();
-      if (text) return text;
+      if (text) return { text, source: "sdui:p-span" };
     }
     for (const selector of TITLE_SELECTORS) {
       const element = jobCard.querySelector(selector);
       const text = element?.textContent?.trim();
-      if (text) return text;
+      if (text) return { text, source: selector };
     }
-    return null;
+    return { text: null, source: null };
+  }
+
+  function getJobTitle(jobCard) {
+    return findTitle(jobCard).text;
   }
 
   // --- Status labels ("Applied", "Viewed", "Promoted") ---
@@ -368,10 +403,45 @@
       "推广", // zh variant
       "已宣傳", // zh-TW
     ],
+    // None of these can plausibly occur in a location name, so they're
+    // safe against the place-name trap documented above.
+    easyApply: [
+      "easy apply", // en
+      "solicitud sencilla", // es (unverified)
+      "candidature simplifiée", // fr (unverified)
+      "einfach bewerben", // de (unverified)
+      "candidatura semplice", // it (unverified)
+      "candidatura simplificada", // pt (unverified)
+      "eenvoudig solliciteren", // nl (unverified)
+      "łatwe aplikowanie", // pl (unverified)
+      "egyszerű jelentkezés", // hu (unverified)
+      "kolay başvuru", // tr (unverified)
+      "aplicare simplă", // ro (unverified)
+      "простой отклик", // ru (unverified)
+      "快速申请", // zh-CN (unverified)
+      "轻松申请", // zh-CN variant (unverified)
+    ],
   };
 
   function matchesStatus(statusTextLower, labels) {
     return labels.some((label) => statusTextLower.includes(label));
+  }
+
+  // Blacklist terms (title keywords and company names) match on word
+  // boundaries so "java" doesn't hide JavaScript jobs and "ai" doesn't
+  // hide "Maintenance". A leading or trailing "*" relaxes that side:
+  // "java*" matches JavaScript. Boundaries are "not a letter/digit"
+  // rather than \b so "c++" and ".net" work.
+  function termToRegex(keyword) {
+    let kw = keyword.trim();
+    const openStart = kw.startsWith("*");
+    const openEnd = kw.endsWith("*");
+    kw = kw.replace(/^\*+|\*+$/g, "").trim();
+    if (!kw) return null;
+    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const start = openStart ? "" : "(?<![\\p{L}\\p{N}])";
+    const end = openEnd ? "" : "(?![\\p{L}\\p{N}])";
+    return new RegExp(start + escaped + end, "iu");
   }
 
   function getStatusTexts(jobCard) {
@@ -379,15 +449,15 @@
     jobCard.querySelectorAll(FOOTER_ITEM_SELECTOR).forEach(function (item) {
       texts.push(item.textContent.trim());
     });
-    if (texts.length === 0 && isSearchResultsCard(jobCard)) {
+    if (texts.length === 0 && isSduiCard(jobCard)) {
       // Status labels are bare <p> elements in the metadata row. Skip the
-      // company paragraph so companies like "Applied Materials" never
-      // match the "Applied" status prefix.
-      const company = getCompanyName(jobCard);
-      jobCard.querySelectorAll("p").forEach(function (p) {
+      // title and company paragraphs (fixed <p> order, see findCompany) so
+      // a title like "Applied Scientist" or a company like
+      // "Applied Materials" never matches the "Applied" status.
+      jobCard.querySelectorAll("p").forEach(function (p, i) {
+        if (i === 0 || i === 1) return;
         const text = p.textContent.trim();
         if (!text || text.length > 40) return;
-        if (company && text === company) return;
         texts.push(text);
       });
     }
@@ -397,28 +467,94 @@
   // --- Hide target ---
   // On /jobs/search-results the role="button" card sits inside a styled
   // wrapper that is a direct child of the lazy-column list; hiding only
-  // the inner card would leave an empty bordered shell behind.
+  // the inner card would leave an empty bordered shell behind. On the
+  // /jobs home feed the card <a> sits inside a div[data-display-contents]
+  // wrapper whose sibling <hr> is the card divider — hide the wrapper.
   function getHideTarget(jobCard) {
-    if (isSearchResultsCard(jobCard)) {
+    if (isSduiCard(jobCard)) {
       const wrapper = jobCard.closest('[data-testid="lazy-column"] > *');
       if (wrapper) return wrapper;
+      if (jobCard.parentElement?.matches('[data-display-contents="true"]')) {
+        return jobCard.parentElement;
+      }
     }
     return jobCard;
+  }
+
+  function setHrHidden(hr, hidden) {
+    if (hidden) {
+      hr.style.display = "none";
+      hr.setAttribute("data-linkedin-filter-hidden-hr", "true");
+    } else if (hr.hasAttribute("data-linkedin-filter-hidden-hr")) {
+      hr.style.display = "";
+      hr.removeAttribute("data-linkedin-filter-hidden-hr");
+    }
   }
 
   // /jobs/search-results renders an <hr> divider between cards as a sibling
   // of the card wrapper; hide it together with the card so dividers don't
   // stack.
   function setDividerHidden(target, hidden) {
+    // Home-feed wrappers are reconciled per pass below — their dividers
+    // can't be derived per card because groups start with a leading <hr>.
+    if (target.matches('[data-display-contents="true"]')) return;
     const divider = target.nextElementSibling;
     if (!divider || divider.tagName !== "HR") return;
-    if (hidden) {
-      divider.style.display = "none";
-      divider.setAttribute("data-linkedin-filter-hidden-hr", "true");
-    } else if (divider.hasAttribute("data-linkedin-filter-hidden-hr")) {
-      divider.style.display = "";
-      divider.removeAttribute("data-linkedin-filter-hidden-hr");
-    }
+    setHrHidden(divider, hidden);
+  }
+
+  // /jobs home feed: cards are grouped in several <div>s inside
+  // JobsHomeFeedModuleListCollection, and groups after the first START
+  // with a leading <hr> before their first card wrapper. Hiding only the
+  // <hr> after each hidden card leaves stacked dividers whenever
+  // consecutive cards or a whole group are hidden, so instead reconcile
+  // all of them once per filter pass: exactly one divider between two
+  // consecutive visible cards, none before the first or after the last.
+  function reconcileHomeFeedDividers() {
+    const container = document.querySelector(
+      '[data-testid="JobsHomeFeedModuleListCollection"]',
+    );
+    if (!container) return;
+    const wrappers = new Set();
+    container
+      .querySelectorAll(
+        '[data-display-contents="true"] > ' + HOME_FEED_CARD_SELECTOR,
+      )
+      .forEach((a) => wrappers.add(a.parentElement));
+    if (wrappers.size === 0) return;
+    // Document-order sequence of card wrappers and the <hr>s adjacent to
+    // them. Adjacency is what keeps module-footer <hr>s and the "Recent
+    // job searches" dividers out of this pass.
+    const items = [];
+    container
+      .querySelectorAll('hr, [data-display-contents="true"]')
+      .forEach((el) => {
+        if (el.tagName === "HR") {
+          if (
+            wrappers.has(el.previousElementSibling) ||
+            wrappers.has(el.nextElementSibling)
+          ) {
+            items.push(el);
+          }
+        } else if (wrappers.has(el)) {
+          items.push(el);
+        }
+      });
+    let prevVisibleCard = false;
+    let pendingHr = null;
+    items.forEach((el) => {
+      if (el.tagName === "HR") {
+        if (prevVisibleCard && !pendingHr) pendingHr = el;
+        else setHrHidden(el, true);
+      } else if (el.getAttribute("data-linkedin-filter-hidden") !== "true") {
+        if (pendingHr) {
+          setHrHidden(pendingHr, false);
+          pendingHr = null;
+        }
+        prevVisibleCard = true;
+      }
+    });
+    if (pendingHr) setHrHidden(pendingHr, true);
   }
 
   // --- Snackbar ---
@@ -487,6 +623,30 @@
     jobCard.appendChild(btn);
   }
 
+  // Reads the chunked company list (see settings-store.js), applies
+  // mutate to it, and writes it back — `set` for the new chunks plus a
+  // `remove` for stale chunk keys left over.
+  function updateCompanyList(mutate, done) {
+    try {
+      chrome.storage.sync.get(null, function (all) {
+        if (chrome.runtime.lastError) {
+          if (done) done(chrome.runtime.lastError.message);
+          return;
+        }
+        const store = window.LinkedInFilterSettings;
+        const current = store.assembleList(all, "blacklistedCompanies");
+        const next = mutate(current);
+        const w = store.buildListWrite(all, "blacklistedCompanies", next);
+        chrome.storage.sync.set(w.set, function () {
+          if (w.remove.length) chrome.storage.sync.remove(w.remove);
+          if (done) done(chrome.runtime.lastError?.message || null);
+        });
+      });
+    } catch {
+      _contextInvalid = true;
+    }
+  }
+
   function onBlacklistClick(jobCard, event) {
     // The whole card is a link — don't navigate to the job
     event.preventDefault();
@@ -500,37 +660,24 @@
       return;
     }
 
-    try {
-      chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
-        if (chrome.runtime.lastError) return;
-
-        const companies = result.blacklistedCompanies || [];
-        const alreadyListed = companies.some(function (c) {
+    let alreadyListed = false;
+    updateCompanyList(
+      function (companies) {
+        alreadyListed = companies.some(function (c) {
           return c.toLowerCase() === company.toLowerCase();
         });
-        if (alreadyListed) {
-          notifyBlacklisted(company, true);
+        if (alreadyListed) return companies;
+        return companies.concat([company]);
+      },
+      function (err) {
+        if (err) {
+          showSnackbar("Couldn't save: " + err);
           return;
         }
-
-        companies.push(company);
-        chrome.storage.sync.set(
-          { blacklistedCompanies: companies },
-          function () {
-            if (chrome.runtime.lastError) {
-              showSnackbar(
-                "Couldn't save: " + chrome.runtime.lastError.message,
-              );
-              return;
-            }
-            // storage.onChanged re-filters every tab; we only show feedback
-            notifyBlacklisted(company, false);
-          },
-        );
-      });
-    } catch {
-      _contextInvalid = true;
-    }
+        // storage.onChanged re-filters every tab; we only show feedback
+        notifyBlacklisted(company, alreadyListed);
+      },
+    );
   }
 
   function notifyBlacklisted(company, alreadyListed) {
@@ -560,13 +707,10 @@
       );
     } else if (!alreadyListed) {
       showSnackbar(base, "Undo", function () {
-        chrome.storage.sync.get(["blacklistedCompanies"], function (result) {
-          const list = (result.blacklistedCompanies || []).filter(
-            function (c) {
-              return c !== company;
-            },
-          );
-          chrome.storage.sync.set({ blacklistedCompanies: list });
+        updateCompanyList(function (companies) {
+          return companies.filter(function (c) {
+            return c !== company;
+          });
         });
       });
     } else {
@@ -593,7 +737,12 @@
         return;
       }
 
-      ensureBlacklistButton(jobCard);
+      if (settings.enabled) {
+        ensureBlacklistButton(jobCard);
+      } else {
+        // Master switch off: leave the page untouched
+        jobCard.querySelector(".linkedin-filter-blacklist-btn")?.remove();
+      }
 
       // Collect all matching reasons — a card can match multiple filters.
       // When the global switch is off no reasons are collected, so every
@@ -614,23 +763,25 @@
             reasons.push("Viewed");
           if (settings.hidePromoted && matchesStatus(lower, STATUS_LABELS.promoted))
             reasons.push("Promoted");
+          if (settings.hideEasyApply && matchesStatus(lower, STATUS_LABELS.easyApply))
+            reasons.push("Easy Apply");
         });
 
-        // Check company blacklist. One-directional match only: the card's
-        // company name must contain the blacklisted term, not the reverse,
-        // so short blacklist entries can't match unrelated companies.
+        // Check company blacklist. Whole-word match via termToRegex so
+        // "Cap" doesn't hide Capgemini; a trailing * ("cap*") opts into
+        // prefix matching. Entries added from the per-card button are
+        // full company names, so they match exactly.
         if (
           settings.hideCompanies &&
           settings.blacklistedCompanies.length > 0
         ) {
           const companyName = getCompanyName(jobCard);
           if (companyName) {
-            const companyLower = companyName.toLowerCase();
             const isBlacklisted = settings.blacklistedCompanies.some((bl) => {
-              const blLower = bl.toLowerCase().trim();
-              // An empty entry would match every company via includes("")
-              if (!blLower) return false;
-              return companyLower === blLower || companyLower.includes(blLower);
+              // An empty entry would match every company; termToRegex
+              // returns null for empty / all-"*" entries.
+              const re = termToRegex(bl);
+              return re && re.test(companyName);
             });
             if (isBlacklisted) {
               reasons.push("Blacklisted: " + companyName);
@@ -645,11 +796,9 @@
         ) {
           const title = getJobTitle(jobCard);
           if (title) {
-            const titleLower = title.toLowerCase();
             const matched = settings.blacklistedKeywords.find((kw) => {
-              const kwLower = kw.toLowerCase().trim();
-              // An empty entry would match every title via includes("")
-              return kwLower && titleLower.includes(kwLower);
+              const re = termToRegex(kw);
+              return re && re.test(title);
             });
             if (matched) {
               reasons.push("Keyword: " + matched);
@@ -677,6 +826,7 @@
       jobCard.setAttribute("data-linkedin-filter-processed", "true");
     });
 
+    reconcileHomeFeedDividers();
     recordHiddenJobs(newlyHidden);
     updateJobCounter();
   }
@@ -736,10 +886,23 @@
       ).length;
     }
 
-    const counters = document.querySelectorAll(COUNTER_SELECTOR);
+    // LinkedIn's header nests/duplicates the subtitle elements — only the
+    // highest-priority match gets the badge.
+    const counter = COUNTER_SELECTORS.map((s) =>
+      document.querySelector(s),
+    ).find(Boolean);
+    document
+      .querySelectorAll(
+        ".linkedin-filter-hidden-count:not(.linkedin-filter-hidden-count--banner)",
+      )
+      .forEach((b) => {
+        if (b.parentElement !== counter) b.remove();
+      });
 
-    counters.forEach((counter) => {
-      let badge = counter.querySelector(".linkedin-filter-hidden-count");
+    if (counter) {
+      let badge = counter.querySelector(
+        ":scope > .linkedin-filter-hidden-count",
+      );
 
       if (hiddenJobs > 0 && totalJobs > 0) {
         if (!badge) {
@@ -751,21 +914,26 @@
       } else if (badge) {
         badge.remove();
       }
-    });
+    }
 
     updateSearchResultsCounter(totalJobs, hiddenJobs);
   }
 
-  // /jobs/search-results has no counter/subtitle element to append to, so
-  // we render our own banner at the top of the results list. Re-inserted
-  // on every filter pass, so it survives LinkedIn's re-renders.
+  // /jobs/search-results and the /jobs home feed have no counter/subtitle
+  // element to append to, so we render our own banner at the top of the
+  // results list. Re-inserted on every filter pass, so it survives
+  // LinkedIn's re-renders.
   function updateSearchResultsCounter(totalJobs, hiddenJobs) {
-    if (!document.querySelector(SEARCH_RESULTS_CARD_SELECTOR)) return;
+    if (!document.querySelector(SDUI_CARD_SELECTOR)) return;
 
     const list =
       document.querySelector(
         '[data-testid="lazy-column"][componentkey="SearchResultsMainContent"]',
-      ) || document.querySelector('[data-testid="lazy-column"]');
+      ) ||
+      document.querySelector('[data-testid="lazy-column"]') ||
+      document.querySelector(
+        '[data-testid="JobsHomeFeedModuleListCollection"]',
+      );
     if (!list) return;
 
     let banner = list.querySelector(
@@ -809,7 +977,7 @@
             node.matches?.(JOB_CARD_SELECTOR) ||
             node.querySelector?.(JOB_CARD_SELECTOR) ||
             node.querySelector?.(
-              ".jobs-search-results, .jobs-search-results-list, [data-testid='lazy-column']",
+              ".jobs-search-results, .jobs-search-results-list, [data-testid='lazy-column'], [data-testid='JobsHomeFeedModuleListCollection']",
             )
           ) {
             shouldFilter = true;
@@ -956,14 +1124,20 @@
       ".job-card-container:not([data-linkedin-filter-processed])," +
       ".base-search-card:not([data-linkedin-filter-processed])," +
       ".job-card-list__item:not([data-linkedin-filter-processed])," +
-      'div[role="button"][componentkey^="job-card-component-ref-"]:not([data-linkedin-filter-processed])' +
+      SEARCH_RESULTS_CARD_SELECTOR +
+      ":not([data-linkedin-filter-processed])," +
+      HOME_FEED_CARD_SELECTOR +
+      ":not([data-linkedin-filter-processed])" +
       "{ opacity: 0; animation: linkedin-filter-reveal 0.2s ease-in-out 3s forwards; }" +
       "@keyframes linkedin-filter-reveal { to { opacity: 1; } }" +
       "li[data-occludable-job-id][data-linkedin-filter-processed]," +
       ".job-card-container[data-linkedin-filter-processed]," +
       ".base-search-card[data-linkedin-filter-processed]," +
       ".job-card-list__item[data-linkedin-filter-processed]," +
-      'div[role="button"][componentkey^="job-card-component-ref-"][data-linkedin-filter-processed]' +
+      SEARCH_RESULTS_CARD_SELECTOR +
+      "[data-linkedin-filter-processed]," +
+      HOME_FEED_CARD_SELECTOR +
+      "[data-linkedin-filter-processed]" +
       "{ opacity: 1 !important; transition: opacity 0.2s ease-in-out; }" +
       '[data-linkedin-filter-hidden="true"]' +
       "{ display: none !important; }" +
@@ -1000,6 +1174,23 @@
       "#linkedin-filter-snackbar button" +
       "{ background: none; border: none; color: #70b5f9; font-weight: 600;" +
       " font-size: 13px; cursor: pointer; padding: 4px; white-space: nowrap; }";
+
+    // Injected UI must stay readable in dark mode. Two triggers: the OS
+    // preference (SDUI pages) and LinkedIn's classic-theme class on <html>.
+    // The rules are written once and emitted under both so they can't
+    // diverge; the snackbar is already dark and needs no override.
+    const darkRules =
+      ".linkedin-filter-hidden-count--banner" +
+      "{ color: #ffb27a; background: rgba(255,178,122,0.10);" +
+      " border-bottom-color: rgba(255,255,255,0.12); }" +
+      ".linkedin-filter-blacklist-btn { color: #bbb; }" +
+      ".linkedin-filter-blacklist-btn:hover" +
+      "{ background: rgba(255,255,255,0.12); color: #ffb27a; }";
+    style.textContent +=
+      "@media (prefers-color-scheme: dark) {" +
+      darkRules +
+      "}" +
+      darkRules.replace(/\.linkedin-filter-/g, "html.theme--dark .linkedin-filter-");
 
     // Safely append even at document_start
     (document.head || document.documentElement).appendChild(style);
@@ -1060,25 +1251,59 @@
   }
 
   // --- Debug ---
+  // Run debugLinkedInFilter() in the page console to dump the detected
+  // title, company, status texts, hidden state + reason, and which
+  // selector produced the title/company for every card. Content scripts
+  // run in an isolated world: in DevTools first switch the console
+  // context dropdown (top-left of the Console panel, says "top") to
+  // "LinkedIn Job Filter", then call it.
   window.debugLinkedInFilter = function () {
     var jobCards = document.querySelectorAll(JOB_CARD_SELECTOR);
     console.group(
-      "LinkedIn Filter: Company Detection (" + jobCards.length + " cards)",
+      "LinkedIn Filter: " + jobCards.length + " cards",
     );
     jobCards.forEach(function (card, i) {
-      var company = getCompanyName(card);
-      var hidden = card.getAttribute("data-linkedin-filter-hidden");
-      var reason = card.getAttribute("data-linkedin-filter-reason");
-      console.log(
-        "[" +
-          i +
-          "] " +
-          (company || "(unknown)") +
-          (hidden ? " [HIDDEN: " + reason + "]" : ""),
-      );
+      var title = findTitle(card);
+      var company = findCompany(card);
+      var target = getHideTarget(card);
+      var hidden = target.getAttribute("data-linkedin-filter-hidden");
+      var reason = target.getAttribute("data-linkedin-filter-reason");
+      console.log("[" + i + "]", {
+        title: title.text,
+        titleSource: title.source,
+        company: company.text,
+        companySource: company.source,
+        statusTexts: getStatusTexts(card),
+        hidden: hidden === "true",
+        reason: reason || null,
+      });
     });
     console.groupEnd();
   };
+
+  // Test hook: only defined when loaded by the jsdom harness (tests/),
+  // never in the browser where `module` is undefined.
+  if (typeof module === "object" && module && module.exports) {
+    module.exports = {
+      JOB_CARD_SELECTOR,
+      STATUS_LABELS,
+      matchesStatus,
+      termToRegex,
+      getCompanyName,
+      getJobTitle,
+      getStatusTexts,
+      getHideTarget,
+      filterJobs,
+      loadSettings,
+      reconcileHomeFeedDividers,
+      updateJobCounter,
+      injectFilterCSS,
+      _setSettings(next) {
+        settings = { ...settings, ...next };
+        settingsLoaded = true;
+      },
+    };
+  }
 
   // --- Start ---
   setupKeepAlivePort();

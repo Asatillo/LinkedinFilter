@@ -4,7 +4,144 @@
     "description": "Extension name. Kept in English in all locales (brand name)."
   },
   "appDesc": {
-    "message": "Filter LinkedIn jobs: hide applied, viewed and promoted posts, blacklist companies and title keywords with one click.",
+    "message": "Filter LinkedIn jobs: hide applied, viewed, promoted and Easy Apply posts, blacklist companies and title keywords.",
     "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "Hide jobs marked as"
+  },
+  "filterApplied": {
+    "message": "Applied"
+  },
+  "filterViewed": {
+    "message": "Viewed"
+  },
+  "filterPromoted": {
+    "message": "Promoted"
+  },
+  "filterEasyApply": {
+    "message": "Easy Apply"
+  },
+  "companyBlacklist": {
+    "message": "Company Blacklist"
+  },
+  "companyBlacklistHint": {
+    "message": "Hide jobs from blacklisted companies"
+  },
+  "companyPlaceholder": {
+    "message": "Type a company, press Enter (cap* = partial match)"
+  },
+  "titleKeywords": {
+    "message": "Title Keywords"
+  },
+  "titleKeywordsHint": {
+    "message": "Hide jobs whose title contains a keyword"
+  },
+  "keywordPlaceholder": {
+    "message": "Type a keyword, press Enter (java* = partial match)"
+  },
+  "extensionReady": {
+    "message": "Extension ready"
+  },
+  "masterSwitchHint": {
+    "message": "Master switch for all filtering"
+  },
+  "switchOn": {
+    "message": "ON"
+  },
+  "switchOff": {
+    "message": "OFF"
+  },
+  "noCompanies": {
+    "message": "No companies blacklisted"
+  },
+  "noKeywords": {
+    "message": "No keywords added"
+  },
+  "remove": {
+    "message": "Remove"
+  },
+  "statusDisabled": {
+    "message": "Extension disabled — all jobs visible"
+  },
+  "statusAllVisible": {
+    "message": "All jobs visible"
+  },
+  "statusHiding": {
+    "message": "Hiding $LIST$ jobs",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "applied"
+  },
+  "labelViewed": {
+    "message": "viewed"
+  },
+  "labelPromoted": {
+    "message": "promoted"
+  },
+  "labelEasyApply": {
+    "message": "easy apply"
+  },
+  "labelCompanies": {
+    "message": "companies"
+  },
+  "labelKeywords": {
+    "message": "keywords"
+  },
+  "saveError": {
+    "message": "Couldn't save settings: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "Couldn't load settings: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "$COUNT$ jobs hidden for you. Enjoying it?",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ Rate it"
+  },
+  "dontShowAgain": {
+    "message": "Don't show again"
+  },
+  "builtWithBy": {
+    "message": "Built with ❤️ by"
+  },
+  "buyMeACoffee": {
+    "message": "☕ Buy me a coffee"
+  },
+  "exportSettings": {
+    "message": "Export settings"
+  },
+  "importSettings": {
+    "message": "Import settings"
+  },
+  "importConfirm": {
+    "message": "Replace all current settings with the imported file?"
+  },
+  "importDone": {
+    "message": "Settings imported"
+  },
+  "importInvalid": {
+    "message": "That file isn't a LinkedIn Job Filter settings export"
   }
 }

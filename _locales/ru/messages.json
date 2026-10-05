@@ -3,6 +3,144 @@
     "message": "LinkedIn Job Filter"
   },
   "appDesc": {
-    "message": "Фильтр вакансий LinkedIn: скрывайте вакансии с откликом, просмотренные и продвигаемые; блокируйте компании и слова в названии."
+    "message": "Фильтр вакансий LinkedIn: скрывайте вакансии с откликом, просмотренные, продвигаемые и Easy Apply; блокируйте компании и слова.",
+    "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "Скрывать вакансии со статусом"
+  },
+  "filterApplied": {
+    "message": "С откликом"
+  },
+  "filterViewed": {
+    "message": "Просмотренные"
+  },
+  "filterPromoted": {
+    "message": "Продвигаемые"
+  },
+  "filterEasyApply": {
+    "message": "Easy Apply"
+  },
+  "companyBlacklist": {
+    "message": "Чёрный список компаний"
+  },
+  "companyBlacklistHint": {
+    "message": "Скрывать вакансии компаний из чёрного списка"
+  },
+  "companyPlaceholder": {
+    "message": "Введите компанию и нажмите Enter (cap* = частичное совпадение)"
+  },
+  "titleKeywords": {
+    "message": "Ключевые слова в названии"
+  },
+  "titleKeywordsHint": {
+    "message": "Скрывать вакансии, в названии которых есть ключевое слово"
+  },
+  "keywordPlaceholder": {
+    "message": "Введите слово, Enter (java* = частичное совпадение)"
+  },
+  "extensionReady": {
+    "message": "Расширение готово"
+  },
+  "masterSwitchHint": {
+    "message": "Главный переключатель всех фильтров"
+  },
+  "switchOn": {
+    "message": "ВКЛ"
+  },
+  "switchOff": {
+    "message": "ВЫКЛ"
+  },
+  "noCompanies": {
+    "message": "Нет компаний в чёрном списке"
+  },
+  "noKeywords": {
+    "message": "Нет ключевых слов"
+  },
+  "remove": {
+    "message": "Удалить"
+  },
+  "statusDisabled": {
+    "message": "Расширение отключено — видны все вакансии"
+  },
+  "statusAllVisible": {
+    "message": "Видны все вакансии"
+  },
+  "statusHiding": {
+    "message": "Скрыто: $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "с откликом"
+  },
+  "labelViewed": {
+    "message": "просмотренные"
+  },
+  "labelPromoted": {
+    "message": "продвигаемые"
+  },
+  "labelEasyApply": {
+    "message": "easy apply"
+  },
+  "labelCompanies": {
+    "message": "компании"
+  },
+  "labelKeywords": {
+    "message": "ключевые слова"
+  },
+  "saveError": {
+    "message": "Не удалось сохранить настройки: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "Не удалось загрузить настройки: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "Скрыто вакансий для вас: $COUNT$. Нравится?",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ Оценить"
+  },
+  "dontShowAgain": {
+    "message": "Больше не показывать"
+  },
+  "builtWithBy": {
+    "message": "Сделано с ❤️"
+  },
+  "buyMeACoffee": {
+    "message": "☕ Buy me a coffee"
+  },
+  "exportSettings": {
+    "message": "Экспорт настроек"
+  },
+  "importSettings": {
+    "message": "Импорт настроек"
+  },
+  "importConfirm": {
+    "message": "Заменить все текущие настройки импортированным файлом?"
+  },
+  "importDone": {
+    "message": "Настройки импортированы"
+  },
+  "importInvalid": {
+    "message": "Этот файл не является экспортом настроек LinkedIn Job Filter"
   }
 }

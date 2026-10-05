@@ -3,6 +3,144 @@
     "message": "LinkedIn Job Filter"
   },
   "appDesc": {
-    "message": "Filtra empleos de LinkedIn: oculta ofertas solicitadas, vistas y promocionadas; bloquea empresas y palabras clave del título."
+    "message": "Filtra empleos de LinkedIn: oculta ofertas solicitadas, vistas, promocionadas y de solicitud sencilla; bloquea empresas y palabras.",
+    "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "Ocultar empleos marcados como"
+  },
+  "filterApplied": {
+    "message": "Solicitados"
+  },
+  "filterViewed": {
+    "message": "Vistos"
+  },
+  "filterPromoted": {
+    "message": "Promocionados"
+  },
+  "filterEasyApply": {
+    "message": "Solicitud sencilla"
+  },
+  "companyBlacklist": {
+    "message": "Lista negra de empresas"
+  },
+  "companyBlacklistHint": {
+    "message": "Ocultar empleos de empresas en la lista negra"
+  },
+  "companyPlaceholder": {
+    "message": "Escribe una empresa y pulsa Enter (cap* = coincidencia parcial)"
+  },
+  "titleKeywords": {
+    "message": "Palabras clave del título"
+  },
+  "titleKeywordsHint": {
+    "message": "Ocultar empleos cuyo título contiene una palabra clave"
+  },
+  "keywordPlaceholder": {
+    "message": "Escribe una palabra y pulsa Enter (java* = coincidencia parcial)"
+  },
+  "extensionReady": {
+    "message": "Extensión lista"
+  },
+  "masterSwitchHint": {
+    "message": "Interruptor principal de todos los filtros"
+  },
+  "switchOn": {
+    "message": "SÍ"
+  },
+  "switchOff": {
+    "message": "NO"
+  },
+  "noCompanies": {
+    "message": "No hay empresas bloqueadas"
+  },
+  "noKeywords": {
+    "message": "No hay palabras clave"
+  },
+  "remove": {
+    "message": "Quitar"
+  },
+  "statusDisabled": {
+    "message": "Extensión desactivada — todos los empleos visibles"
+  },
+  "statusAllVisible": {
+    "message": "Todos los empleos visibles"
+  },
+  "statusHiding": {
+    "message": "Ocultando empleos: $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "solicitados"
+  },
+  "labelViewed": {
+    "message": "vistos"
+  },
+  "labelPromoted": {
+    "message": "promocionados"
+  },
+  "labelEasyApply": {
+    "message": "solicitud sencilla"
+  },
+  "labelCompanies": {
+    "message": "empresas"
+  },
+  "labelKeywords": {
+    "message": "palabras clave"
+  },
+  "saveError": {
+    "message": "No se pudieron guardar los ajustes: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "No se pudieron cargar los ajustes: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "$COUNT$ empleos ocultados. ¿Te gusta?",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ Valórala"
+  },
+  "dontShowAgain": {
+    "message": "No volver a mostrar"
+  },
+  "builtWithBy": {
+    "message": "Hecho con ❤️ por"
+  },
+  "buyMeACoffee": {
+    "message": "☕ Invítame a un café"
+  },
+  "exportSettings": {
+    "message": "Exportar ajustes"
+  },
+  "importSettings": {
+    "message": "Importar ajustes"
+  },
+  "importConfirm": {
+    "message": "¿Reemplazar todos los ajustes actuales con el archivo importado?"
+  },
+  "importDone": {
+    "message": "Ajustes importados"
+  },
+  "importInvalid": {
+    "message": "Ese archivo no es una exportación de ajustes de LinkedIn Job Filter"
   }
 }

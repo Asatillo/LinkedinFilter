@@ -3,31 +3,33 @@
   <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="popup.css" />
-    <title>LinkedIn Job Filter</title>
+    <title data-i18n="appName">LinkedIn Job Filter</title>
   </head>
   <body>
     <div class="header">
       <img src="assets/icon16.png" alt="LinkedIn Job Filter" class="logo-icon">
-      <div class="title">LinkedIn Job Filter</div>
-      <div class="master-switch" title="Master switch for all filtering">
+      <div class="title" data-i18n="appName">LinkedIn Job Filter</div>
+      <div class="master-switch" data-i18n-title="masterSwitchHint" title="Master switch for all filtering">
         <span class="switch-state" id="switchState">ON</span>
         <div class="toggle" id="extensionEnabled"></div>
       </div>
     </div>
 
-    <div class="section-caption">Hide jobs marked as</div>
+    <div class="section-caption" data-i18n="hideJobsMarkedAs">Hide jobs marked as</div>
     <div class="filter-chips">
-      <button type="button" class="chip" id="hideApplied">Applied</button>
-      <button type="button" class="chip" id="hideViewed">Viewed</button>
-      <button type="button" class="chip" id="hidePromoted">Promoted</button>
+      <button type="button" class="chip" id="hideApplied" data-i18n="filterApplied">Applied</button>
+      <button type="button" class="chip" id="hideViewed" data-i18n="filterViewed">Viewed</button>
+      <button type="button" class="chip" id="hidePromoted" data-i18n="filterPromoted">Promoted</button>
+      <button type="button" class="chip" id="hideEasyApply" data-i18n="filterEasyApply">Easy Apply</button>
     </div>
 
     <div class="list-section">
       <div class="section-header">
-        <span class="section-title">Company Blacklist</span>
+        <span class="section-title" data-i18n="companyBlacklist">Company Blacklist</span>
         <div
           class="toggle small"
           id="hideCompanies"
+          data-i18n-title="companyBlacklistHint"
           title="Hide jobs from blacklisted companies"
         ></div>
       </div>
@@ -35,6 +37,7 @@
         type="text"
         id="companyInput"
         class="list-input"
+        data-i18n-placeholder="companyPlaceholder"
         placeholder="Type a company, press Enter"
         maxlength="100"
       />
@@ -43,10 +46,11 @@
 
     <div class="list-section">
       <div class="section-header">
-        <span class="section-title">Title Keywords</span>
+        <span class="section-title" data-i18n="titleKeywords">Title Keywords</span>
         <div
           class="toggle small"
           id="hideKeywords"
+          data-i18n-title="titleKeywordsHint"
           title="Hide jobs whose title contains a keyword"
         ></div>
       </div>
@@ -54,13 +58,31 @@
         type="text"
         id="keywordInput"
         class="list-input"
-        placeholder="Type a keyword, press Enter"
+        data-i18n-placeholder="keywordPlaceholder"
+        placeholder="Type a keyword, press Enter (java* = partial match)"
         maxlength="100"
       />
       <div id="keywordsList" class="chip-list"></div>
     </div>
 
-    <div class="status" id="status">Extension ready</div>
+    <div class="settings-io">
+      <button
+        type="button"
+        class="link-button"
+        id="exportSettings"
+        data-i18n="exportSettings"
+      >Export settings</button>
+      <span class="dot">·</span>
+      <button
+        type="button"
+        class="link-button"
+        id="importSettings"
+        data-i18n="importSettings"
+      >Import settings</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden />
+    </div>
+
+    <div class="status" id="status" data-i18n="extensionReady">Extension ready</div>
 
     <div class="review-ask" id="reviewAsk">
       <span id="reviewAskText"></span>
@@ -69,12 +91,14 @@
         class="review-ask-link"
         href="https://chromewebstore.google.com/detail/djmcjhmjaacdnocbiobohbebillhcnil/reviews"
         target="_blank"
+        data-i18n="rateIt"
         >★ Rate it</a
       >
       <button
         type="button"
         class="review-ask-dismiss"
         id="reviewAskDismiss"
+        data-i18n-title="dontShowAgain"
         title="Don't show again"
       >
         ×
@@ -83,11 +107,15 @@
 
     <div class="footer">
       <div class="footer-text">
-        Built with <span class="heart">❤️</span> by
+        <span data-i18n="builtWithBy">Built with ❤️ by</span>
         <a href="https://github.com/Asatillo" target="_blank" class="author-link">Asat</a>
+      </div>
+      <div class="footer-text">
+        <a href="https://buymeacoffee.com/asat" target="_blank" class="author-link" data-i18n="buyMeACoffee">☕ Buy me a coffee</a>
       </div>
     </div>
 
+    <script src="settings-store.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

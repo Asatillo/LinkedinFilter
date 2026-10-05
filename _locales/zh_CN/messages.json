@@ -3,6 +3,144 @@
     "message": "LinkedIn Job Filter"
   },
   "appDesc": {
-    "message": "过滤领英职位：隐藏已申请、已浏览和推广的职位，一键屏蔽公司和职位名称关键词。"
+    "message": "过滤领英职位：隐藏已申请、已浏览、推广和 Easy Apply 职位，一键屏蔽公司和名称关键词。",
+    "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "隐藏标记为以下状态的职位"
+  },
+  "filterApplied": {
+    "message": "已申请"
+  },
+  "filterViewed": {
+    "message": "已浏览"
+  },
+  "filterPromoted": {
+    "message": "推广"
+  },
+  "filterEasyApply": {
+    "message": "Easy Apply"
+  },
+  "companyBlacklist": {
+    "message": "公司黑名单"
+  },
+  "companyBlacklistHint": {
+    "message": "隐藏黑名单公司的职位"
+  },
+  "companyPlaceholder": {
+    "message": "输入公司名，按回车（cap* = 部分匹配）"
+  },
+  "titleKeywords": {
+    "message": "职位名称关键词"
+  },
+  "titleKeywordsHint": {
+    "message": "隐藏名称包含关键词的职位"
+  },
+  "keywordPlaceholder": {
+    "message": "输入关键词，回车（java* = 部分匹配）"
+  },
+  "extensionReady": {
+    "message": "扩展已就绪"
+  },
+  "masterSwitchHint": {
+    "message": "所有过滤器的总开关"
+  },
+  "switchOn": {
+    "message": "开"
+  },
+  "switchOff": {
+    "message": "关"
+  },
+  "noCompanies": {
+    "message": "没有黑名单公司"
+  },
+  "noKeywords": {
+    "message": "未添加关键词"
+  },
+  "remove": {
+    "message": "移除"
+  },
+  "statusDisabled": {
+    "message": "扩展已停用 — 显示全部职位"
+  },
+  "statusAllVisible": {
+    "message": "显示全部职位"
+  },
+  "statusHiding": {
+    "message": "正在隐藏：$LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "已申请"
+  },
+  "labelViewed": {
+    "message": "已浏览"
+  },
+  "labelPromoted": {
+    "message": "推广"
+  },
+  "labelEasyApply": {
+    "message": "easy apply"
+  },
+  "labelCompanies": {
+    "message": "公司"
+  },
+  "labelKeywords": {
+    "message": "关键词"
+  },
+  "saveError": {
+    "message": "无法保存设置：$MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "无法加载设置：$MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "已为您隐藏 $COUNT$ 个职位。好用吗？",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ 评分"
+  },
+  "dontShowAgain": {
+    "message": "不再显示"
+  },
+  "builtWithBy": {
+    "message": "❤️ 制作："
+  },
+  "buyMeACoffee": {
+    "message": "☕ Buy me a coffee"
+  },
+  "exportSettings": {
+    "message": "导出设置"
+  },
+  "importSettings": {
+    "message": "导入设置"
+  },
+  "importConfirm": {
+    "message": "用导入的文件替换所有当前设置？"
+  },
+  "importDone": {
+    "message": "设置已导入"
+  },
+  "importInvalid": {
+    "message": "该文件不是 LinkedIn Job Filter 的设置导出"
   }
 }

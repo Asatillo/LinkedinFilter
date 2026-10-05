@@ -3,6 +3,144 @@
     "message": "LinkedIn Job Filter"
   },
   "appDesc": {
-    "message": "Filtrează joburile LinkedIn: ascunde anunțurile aplicate, văzute și promovate; blochează companii și cuvinte-cheie din titlu."
+    "message": "Filtrează joburile LinkedIn: ascunde anunțurile aplicate, văzute, promovate și cu aplicare simplă; blochează companii și cuvinte.",
+    "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "Ascunde joburile marcate ca"
+  },
+  "filterApplied": {
+    "message": "Aplicate"
+  },
+  "filterViewed": {
+    "message": "Văzute"
+  },
+  "filterPromoted": {
+    "message": "Promovate"
+  },
+  "filterEasyApply": {
+    "message": "Aplicare simplă"
+  },
+  "companyBlacklist": {
+    "message": "Companii blocate"
+  },
+  "companyBlacklistHint": {
+    "message": "Ascunde joburi de la companii blocate"
+  },
+  "companyPlaceholder": {
+    "message": "Scrie o companie, apasă Enter (cap* = potrivire parțială)"
+  },
+  "titleKeywords": {
+    "message": "Cuvinte-cheie din titlu"
+  },
+  "titleKeywordsHint": {
+    "message": "Ascunde joburi al căror titlu conține un cuvânt-cheie"
+  },
+  "keywordPlaceholder": {
+    "message": "Scrie un cuvânt, Enter (java* = potrivire parțială)"
+  },
+  "extensionReady": {
+    "message": "Extensia e gata"
+  },
+  "masterSwitchHint": {
+    "message": "Comutator principal pentru toate filtrele"
+  },
+  "switchOn": {
+    "message": "PORNIT"
+  },
+  "switchOff": {
+    "message": "OPRIT"
+  },
+  "noCompanies": {
+    "message": "Nicio companie blocată"
+  },
+  "noKeywords": {
+    "message": "Niciun cuvânt-cheie adăugat"
+  },
+  "remove": {
+    "message": "Elimină"
+  },
+  "statusDisabled": {
+    "message": "Extensie dezactivată — toate joburile vizibile"
+  },
+  "statusAllVisible": {
+    "message": "Toate joburile vizibile"
+  },
+  "statusHiding": {
+    "message": "Se ascund: $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "aplicate"
+  },
+  "labelViewed": {
+    "message": "văzute"
+  },
+  "labelPromoted": {
+    "message": "promovate"
+  },
+  "labelEasyApply": {
+    "message": "aplicare simplă"
+  },
+  "labelCompanies": {
+    "message": "companii"
+  },
+  "labelKeywords": {
+    "message": "cuvinte-cheie"
+  },
+  "saveError": {
+    "message": "Setările nu s-au putut salva: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "Setările nu s-au putut încărca: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "$COUNT$ joburi ascunse pentru tine. Îți place?",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ Evaluează"
+  },
+  "dontShowAgain": {
+    "message": "Nu mai afișa"
+  },
+  "builtWithBy": {
+    "message": "Creat cu ❤️ de"
+  },
+  "buyMeACoffee": {
+    "message": "☕ Plătește-mi o cafea"
+  },
+  "exportSettings": {
+    "message": "Exportă setările"
+  },
+  "importSettings": {
+    "message": "Importă setările"
+  },
+  "importConfirm": {
+    "message": "Înlocuiești toate setările curente cu fișierul importat?"
+  },
+  "importDone": {
+    "message": "Setări importate"
+  },
+  "importInvalid": {
+    "message": "Fișierul nu este un export de setări LinkedIn Job Filter"
   }
 }

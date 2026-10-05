@@ -109,13 +109,15 @@ body:not(.extension-off) .switch-state {
 
 .filter-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
 
 .chip {
-  flex: 1;
-  padding: 7px 0;
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  white-space: nowrap;
   border-radius: 16px;
   border: 1px solid #e1e5e9;
   background: white;
@@ -244,6 +246,32 @@ body:not(.extension-off) .switch-state {
   background: #fdf1f0;
   border-color: #b74700;
   color: #b74700;
+}
+
+/* --- Export / import --- */
+.settings-io {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  font-size: 12px;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: #0a66c2;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.dot {
+  color: #999;
 }
 
 /* Dim and lock the filter controls while the master switch is off */

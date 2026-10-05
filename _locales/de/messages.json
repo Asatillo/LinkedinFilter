@@ -3,6 +3,144 @@
     "message": "LinkedIn Job Filter"
   },
   "appDesc": {
-    "message": "LinkedIn-Jobs filtern: beworbene, angesehene und gesponserte Anzeigen ausblenden; Firmen und Stichwörter im Titel blockieren."
+    "message": "LinkedIn-Jobs filtern: beworbene, angesehene, gesponserte und Easy-Apply-Anzeigen ausblenden; Firmen und Stichwörter blockieren.",
+    "description": "Manifest description, max 132 characters."
+  },
+  "hideJobsMarkedAs": {
+    "message": "Jobs ausblenden mit Status"
+  },
+  "filterApplied": {
+    "message": "Beworben"
+  },
+  "filterViewed": {
+    "message": "Angesehen"
+  },
+  "filterPromoted": {
+    "message": "Gesponsert"
+  },
+  "filterEasyApply": {
+    "message": "Easy Apply"
+  },
+  "companyBlacklist": {
+    "message": "Firmen-Sperrliste"
+  },
+  "companyBlacklistHint": {
+    "message": "Jobs von gesperrten Firmen ausblenden"
+  },
+  "companyPlaceholder": {
+    "message": "Firma eingeben, Enter drücken (cap* = Teilübereinstimmung)"
+  },
+  "titleKeywords": {
+    "message": "Stichwörter im Titel"
+  },
+  "titleKeywordsHint": {
+    "message": "Jobs ausblenden, deren Titel ein Stichwort enthält"
+  },
+  "keywordPlaceholder": {
+    "message": "Stichwort eingeben, Enter drücken (java* = Teilübereinstimmung)"
+  },
+  "extensionReady": {
+    "message": "Erweiterung bereit"
+  },
+  "masterSwitchHint": {
+    "message": "Hauptschalter für alle Filter"
+  },
+  "switchOn": {
+    "message": "AN"
+  },
+  "switchOff": {
+    "message": "AUS"
+  },
+  "noCompanies": {
+    "message": "Keine Firmen gesperrt"
+  },
+  "noKeywords": {
+    "message": "Keine Stichwörter hinzugefügt"
+  },
+  "remove": {
+    "message": "Entfernen"
+  },
+  "statusDisabled": {
+    "message": "Erweiterung deaktiviert — alle Jobs sichtbar"
+  },
+  "statusAllVisible": {
+    "message": "Alle Jobs sichtbar"
+  },
+  "statusHiding": {
+    "message": "Ausgeblendet: $LIST$",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "labelApplied": {
+    "message": "beworben"
+  },
+  "labelViewed": {
+    "message": "angesehen"
+  },
+  "labelPromoted": {
+    "message": "gesponsert"
+  },
+  "labelEasyApply": {
+    "message": "easy apply"
+  },
+  "labelCompanies": {
+    "message": "firmen"
+  },
+  "labelKeywords": {
+    "message": "stichwörter"
+  },
+  "saveError": {
+    "message": "Einstellungen konnten nicht gespeichert werden: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "loadError": {
+    "message": "Einstellungen konnten nicht geladen werden: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAskText": {
+    "message": "$COUNT$ Jobs für Sie ausgeblendet. Gefällt es Ihnen?",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rateIt": {
+    "message": "★ Bewerten"
+  },
+  "dontShowAgain": {
+    "message": "Nicht wieder anzeigen"
+  },
+  "builtWithBy": {
+    "message": "Erstellt mit ❤️ von"
+  },
+  "buyMeACoffee": {
+    "message": "☕ Spendier mir einen Kaffee"
+  },
+  "exportSettings": {
+    "message": "Einstellungen exportieren"
+  },
+  "importSettings": {
+    "message": "Einstellungen importieren"
+  },
+  "importConfirm": {
+    "message": "Alle aktuellen Einstellungen durch die importierte Datei ersetzen?"
+  },
+  "importDone": {
+    "message": "Einstellungen importiert"
+  },
+  "importInvalid": {
+    "message": "Diese Datei ist kein LinkedIn-Job-Filter-Einstellungsexport"
   }
 }
