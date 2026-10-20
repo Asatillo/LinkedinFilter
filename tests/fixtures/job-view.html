@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <!-- /jobs/view/<id> (SDUI job details). The whole page body is a
+         lazy-column; the "similar jobs" cards use the home-feed shape
+         (<a> inside div[data-display-contents]) but live deep inside the
+         same lazy-column child as the job description. -->
+    <div data-testid="lazy-column" componentkey="job-view-column">
+      <div></div>
+      <div id="top-card">
+        <p>Deloitte</p>
+        <p>
+          Manager - Senior Manager | AI &amp; Data - Data Management and
+          Governance | UAE - Dubai
+        </p>
+        <p>Dubai, Dubai, United Arab Emirates · 2 days ago</p>
+      </div>
+      <div id="details-section">
+        <div id="about-the-job">
+          <h2>About the job</h2>
+          <p>Confidential job description text from a University partner.</p>
+        </div>
+        <div
+          id="JobDetailsSimilarJobsSlot_1"
+          componentkey="JobDetailsSimilarJobsSlot_1"
+        >
+          <div>
+            <div>
+              <div data-display-contents="true">
+                <a
+                  componentkey="sim-1"
+                  href="https://www.linkedin.com/jobs/search-results/?keywords=x&currentJobId=201"
+                >
+                  <div componentkey="sim-1">
+                    <button aria-label="More options"></button>
+                    <div data-display-contents="true">
+                      <div>
+                        <p>
+                          <span></span
+                          ><span aria-hidden="true">AI Consultant</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div><p>DEPT®</p></div>
+                    <div><p><span>Dubai</span></p></div>
+                    <div><p><span>3 school alumni work here</span></p></div>
+                    <div>
+                      <p>Promoted</p>
+                      <p>·</p>
+                      <p><span>Posted 1 week ago</span></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div data-display-contents="true">
+                <a
+                  componentkey="sim-2"
+                  href="https://www.linkedin.com/jobs/search-results/?keywords=x&currentJobId=202"
+                >
+                  <div componentkey="sim-2">
+                    <button aria-label="More options"></button>
+                    <div data-display-contents="true">
+                      <div>
+                        <p>
+                          <span></span
+                          ><span aria-hidden="true">HR Business Partner</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div><p>Halian</p></div>
+                    <div><p><span>Dubai</span></p></div>
+                    <div>
+                      <p><span>Posted 2 days ago</span></p>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

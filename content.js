@@ -470,13 +470,26 @@
   // the inner card would leave an empty bordered shell behind. On the
   // /jobs home feed the card <a> sits inside a div[data-display-contents]
   // wrapper whose sibling <hr> is the card divider — hide the wrapper.
+  // The lazy-column lookup is for role="button" cards only, and only when
+  // that wrapper holds this card alone: on /jobs/view/<id> the whole page
+  // is one lazy-column, and its "similar jobs" <a> cards share a
+  // lazy-column child with the job description — hiding that child for
+  // one matching similar job hid the entire posting.
   function getHideTarget(jobCard) {
-    if (isSduiCard(jobCard)) {
+    if (jobCard.matches(SEARCH_RESULTS_CARD_SELECTOR)) {
       const wrapper = jobCard.closest('[data-testid="lazy-column"] > *');
-      if (wrapper) return wrapper;
-      if (jobCard.parentElement?.matches('[data-display-contents="true"]')) {
-        return jobCard.parentElement;
+      if (
+        wrapper &&
+        wrapper.querySelectorAll(SDUI_CARD_SELECTOR).length === 1
+      ) {
+        return wrapper;
       }
+    }
+    if (
+      isSduiCard(jobCard) &&
+      jobCard.parentElement?.matches('[data-display-contents="true"]')
+    ) {
+      return jobCard.parentElement;
     }
     return jobCard;
   }
@@ -497,7 +510,10 @@
   function setDividerHidden(target, hidden) {
     // Home-feed wrappers are reconciled per pass below — their dividers
     // can't be derived per card because groups start with a leading <hr>.
-    if (target.matches('[data-display-contents="true"]')) return;
+    // (Not a data-display-contents check: /jobs/search-results wrappers
+    // carry that attribute too.)
+    if (target.closest('[data-testid="JobsHomeFeedModuleListCollection"]'))
+      return;
     const divider = target.nextElementSibling;
     if (!divider || divider.tagName !== "HR") return;
     setHrHidden(divider, hidden);

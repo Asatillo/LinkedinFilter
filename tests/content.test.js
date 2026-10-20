@@ -30,6 +30,10 @@ function sduiCards(document) {
   ];
 }
 
+// The element hidden for a /jobs/search-results card: the lazy-column
+// child wrapper (several levels above the role=button card).
+const sduiWrap = (c) => c.closest('[data-testid="lazy-column"] > *');
+
 function homeCards(document) {
   return [
     ...document.querySelectorAll(
@@ -64,7 +68,7 @@ test("sdui: Easy Apply filter hides only Easy Apply cards and records the reason
   api._setSettings({ enabled: true, hideEasyApply: true });
   api.filterJobs();
   const cards = sduiCards(document);
-  const wrap = (c) => c.parentElement;
+  const wrap = sduiWrap;
   assert.ok(isHidden(wrap(cards[0])));
   assert.ok(reason(wrap(cards[0])).includes("Easy Apply"));
   assert.ok(isHidden(wrap(cards[1])));
@@ -80,9 +84,9 @@ test("sdui: 'Applied Scientist' title and 'Applied Materials' company do not tri
   api._setSettings({ enabled: true, hideApplied: true });
   api.filterJobs();
   const cards = sduiCards(document);
-  assert.ok(!isHidden(cards[2].parentElement));
-  assert.ok(!isHidden(cards[3].parentElement));
-  assert.ok(isHidden(cards[4].parentElement));
+  assert.ok(!isHidden(sduiWrap(cards[2])));
+  assert.ok(!isHidden(sduiWrap(cards[3])));
+  assert.ok(isHidden(sduiWrap(cards[4])));
 });
 
 test("sdui: 'Chula Vista' location does not trigger Viewed", () => {
@@ -90,14 +94,14 @@ test("sdui: 'Chula Vista' location does not trigger Viewed", () => {
   api._setSettings({ enabled: true, hideViewed: true });
   api.filterJobs();
   const cards = sduiCards(document);
-  assert.ok(!isHidden(cards[3].parentElement));
-  assert.ok(isHidden(cards[0].parentElement));
+  assert.ok(!isHidden(sduiWrap(cards[3])));
+  assert.ok(isHidden(sduiWrap(cards[0])));
 });
 
 test("sdui: hide target is the lazy-column child wrapper, not the role=button card", () => {
   const { document, api } = load("sdui-search.html");
   const card = sduiCards(document)[0];
-  assert.equal(api.getHideTarget(card), card.parentElement);
+  assert.equal(api.getHideTarget(card), sduiWrap(card));
 });
 
 test("sdui: banner shows hidden count and clears when filters turn off", () => {
@@ -144,9 +148,9 @@ test("keywords: filterJobs hides matching titles only", () => {
   });
   api.filterJobs();
   const cards = sduiCards(document);
-  assert.ok(isHidden(cards[4].parentElement));
-  assert.ok(reason(cards[4].parentElement).includes("Keyword: java"));
-  assert.ok(!isHidden(cards[5].parentElement));
+  assert.ok(isHidden(sduiWrap(cards[4])));
+  assert.ok(reason(sduiWrap(cards[4])).includes("Keyword: java"));
+  assert.ok(!isHidden(sduiWrap(cards[5])));
 });
 
 // --- Companies ---
@@ -154,7 +158,7 @@ test("keywords: filterJobs hides matching titles only", () => {
 test("companies: whole-word match, * relaxes", () => {
   const { document, api } = load("sdui-search.html");
   const cards = sduiCards(document);
-  const wrap = (c) => c.parentElement;
+  const wrap = sduiWrap;
   const set = (list) =>
     api._setSettings({
       enabled: true,
@@ -254,6 +258,40 @@ test("home feed: Easy Apply / status detection works on anchor cards", () => {
   assert.equal(api.getCompanyName(cardB), "Beta Ltd");
 });
 
+// --- Job details page (/jobs/view/<id>) ---
+
+test("job view: a matching similar job hides only its own card, not the job description", () => {
+  const { document, api } = load("job-view.html");
+  api._setSettings({
+    enabled: true,
+    hidePromoted: true,
+    hideKeywords: true,
+    blacklistedKeywords: ["HR"],
+  });
+  api.filterJobs();
+  const [promoted, hr] = homeCards(document);
+  assert.ok(isHidden(promoted.parentElement));
+  assert.ok(isHidden(hr.parentElement));
+  assert.ok(reason(hr.parentElement).includes("Keyword: HR"));
+  const details = document.getElementById("details-section");
+  assert.ok(!isHidden(details));
+  assert.notEqual(details.style.display, "none");
+});
+
+test("job view: a blacklisted similar-job company does not hide the job description", () => {
+  const { document, api } = load("job-view.html");
+  api._setSettings({
+    enabled: true,
+    hideCompanies: true,
+    blacklistedCompanies: ["Halian"],
+  });
+  api.filterJobs();
+  const [, halian] = homeCards(document);
+  assert.equal(api.getHideTarget(halian), halian.parentElement);
+  assert.ok(isHidden(halian.parentElement));
+  assert.ok(!isHidden(document.getElementById("details-section")));
+});
+
 // --- Classic UI ---
 
 test("classic: only the outer li is hidden and the inner container is still marked processed", () => {
@@ -333,11 +371,11 @@ test("settings loader assembles chunked company lists", () => {
   api.loadSettings();
   const cards = sduiCards(document);
   [0, 1].forEach((i) => {
-    const wrap = cards[i].parentElement;
+    const wrap = sduiWrap(cards[i]);
     assert.ok(isHidden(wrap));
     assert.ok(reason(wrap).includes("Blacklisted:"));
   });
   [2, 3, 4, 5].forEach((i) =>
-    assert.ok(!isHidden(cards[i].parentElement)),
+    assert.ok(!isHidden(sduiWrap(cards[i]))),
   );
 });
