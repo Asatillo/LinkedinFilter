@@ -292,6 +292,84 @@ test("job view: a blacklisted similar-job company does not hide the job descript
   assert.ok(!isHidden(document.getElementById("details-section")));
 });
 
+// --- Status gained on this page (Viewed / Applied after first sight) ---
+
+// Simulates LinkedIn appending a status label to the card's metadata row
+// after the user opens (or applies to) the job.
+function addSduiStatus(card, label) {
+  const p = card.ownerDocument.createElement("p");
+  p.textContent = label;
+  card.querySelector(":scope > div:last-of-type").appendChild(p);
+}
+
+test("sticky: a card that becomes Viewed after first sight stays visible", () => {
+  const { document, api } = load("sdui-search.html");
+  api._setSettings({ enabled: true, hideViewed: true });
+  api.filterJobs();
+  const cards = sduiCards(document);
+  assert.ok(isHidden(sduiWrap(cards[0]))); // Viewed on arrival → hidden
+  assert.ok(!isHidden(sduiWrap(cards[1])));
+  addSduiStatus(cards[1], "Viewed");
+  api.filterJobs();
+  assert.ok(!isHidden(sduiWrap(cards[1])));
+  assert.ok(isHidden(sduiWrap(cards[0])));
+});
+
+test("sticky: a card that becomes Applied after first sight stays visible", () => {
+  const { document, api } = load("sdui-search.html");
+  api._setSettings({ enabled: true, hideApplied: true });
+  api.filterJobs();
+  const cards = sduiCards(document);
+  assert.ok(isHidden(sduiWrap(cards[4]))); // Applied on arrival
+  addSduiStatus(cards[1], "Applied");
+  api.filterJobs();
+  assert.ok(!isHidden(sduiWrap(cards[1])));
+});
+
+test("sticky: keyword and company filters still apply to already-seen cards", () => {
+  const { document, api } = load("sdui-search.html");
+  api._setSettings({ enabled: true, hideViewed: true });
+  api.filterJobs();
+  const cards = sduiCards(document);
+  addSduiStatus(cards[1], "Viewed");
+  api._setSettings({
+    hideKeywords: true,
+    blacklistedKeywords: ["software"],
+  });
+  api.filterJobs();
+  assert.ok(isHidden(sduiWrap(cards[1])));
+  assert.ok(reason(sduiWrap(cards[1])).includes("Keyword: software"));
+  assert.ok(!reason(sduiWrap(cards[1])).includes("Viewed"));
+});
+
+test("sticky: remembered by job ID, so a re-rendered card stays visible", () => {
+  const { document, api } = load("home-feed.html");
+  api._setSettings({ enabled: true, hideViewed: true });
+  api.filterJobs();
+  const cardA = homeCards(document)[0];
+  // LinkedIn re-renders the card as a fresh node, now labelled Viewed
+  const fresh = cardA.cloneNode(true);
+  fresh.removeAttribute("data-linkedin-filter-processed");
+  fresh.querySelector("div > div:last-of-type p").textContent = "Viewed";
+  cardA.replaceWith(fresh);
+  api.filterJobs();
+  assert.ok(!isHidden(fresh.parentElement));
+  // Card C arrived already Viewed → still hidden
+  assert.ok(isHidden(homeCards(document)[2].parentElement));
+});
+
+test("sticky: an empty placeholder card does not count as first sight", () => {
+  const { document, api } = load("classic.html");
+  const li2 = document.querySelector('li[data-occludable-job-id="2"]');
+  const content = li2.innerHTML;
+  li2.innerHTML = ""; // classic UI renders off-screen cards as empty <li>s
+  api._setSettings({ enabled: true, hideViewed: true });
+  api.filterJobs();
+  li2.innerHTML = content; // scrolled into view: real card, already Viewed
+  api.filterJobs();
+  assert.ok(isHidden(li2));
+});
+
 // --- Classic UI ---
 
 test("classic: only the outer li is hidden and the inner container is still marked processed", () => {

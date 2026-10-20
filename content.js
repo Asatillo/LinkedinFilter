@@ -190,6 +190,10 @@
     blacklistedKeywords: [],
   };
   let settingsLoaded = false;
+  // jobId → { applied, viewed } as first seen on this page load. Lives for
+  // the document's lifetime: NOT reset by cleanup(), because opening a job
+  // changes the URL (currentJobId plus tracking params) and re-inits.
+  const firstSeenStatus = new Map();
   let filterDebounceTimer = null;
   let scrollDebounceTimer = null;
   let domObserver = null;
@@ -442,6 +446,50 @@
     const start = openStart ? "" : "(?<![\\p{L}\\p{N}])";
     const end = openEnd ? "" : "(?![\\p{L}\\p{N}])";
     return new RegExp(start + escaped + end, "iu");
+  }
+
+  // --- Job IDs ---
+  // Stable per-job key, so a card LinkedIn re-renders as a new node (React
+  // re-render, virtual-list recycling) is still recognised.
+  function getJobId(jobCard) {
+    const key = jobCard.getAttribute("componentkey") || "";
+    if (key.startsWith("job-card-component-ref-")) {
+      return key.slice("job-card-component-ref-".length);
+    }
+    const href = jobCard.getAttribute("href");
+    if (href) {
+      try {
+        const id = new URL(href, location.href).searchParams.get(
+          "currentJobId",
+        );
+        if (id) return id;
+      } catch {}
+    }
+    const id =
+      jobCard.getAttribute("data-occludable-job-id") ||
+      jobCard.getAttribute("data-job-id");
+    if (id) return id;
+    const urn = jobCard.getAttribute("data-entity-urn") || "";
+    const m = urn.match(/jobPosting:(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  // Viewed / Applied labels that appear while the user is on the page
+  // (opening a job marks it Viewed) must not make the card vanish from the
+  // list — only labels a job already had when it first rendered here count.
+  // Returns the first-seen statuses, recording them on first sight. Empty
+  // placeholder cards (classic UI renders off-screen <li>s without content)
+  // have no title and are not recorded, or an already-Viewed job would be
+  // exempted once its content renders.
+  function rememberFirstStatus(jobCard, applied, viewed) {
+    const id = getJobId(jobCard);
+    if (!id) return null;
+    let seen = firstSeenStatus.get(id);
+    if (!seen && getJobTitle(jobCard)) {
+      seen = { applied, viewed };
+      firstSeenStatus.set(id, seen);
+    }
+    return seen || null;
   }
 
   function getStatusTexts(jobCard) {
@@ -771,17 +819,24 @@
         // STATUS_LABELS). Substring match, not prefix/equality: LinkedIn
         // renders variants like "Applied 2d ago" and some languages put the
         // label last ("Vor 2 Wochen beworben").
-        getStatusTexts(jobCard).forEach((text) => {
-          const lower = text.toLowerCase();
-          if (settings.hideApplied && matchesStatus(lower, STATUS_LABELS.applied))
-            reasons.push("Applied");
-          if (settings.hideViewed && matchesStatus(lower, STATUS_LABELS.viewed))
-            reasons.push("Viewed");
-          if (settings.hidePromoted && matchesStatus(lower, STATUS_LABELS.promoted))
-            reasons.push("Promoted");
-          if (settings.hideEasyApply && matchesStatus(lower, STATUS_LABELS.easyApply))
-            reasons.push("Easy Apply");
-        });
+        const statusTexts = getStatusTexts(jobCard).map((t) =>
+          t.toLowerCase(),
+        );
+        const hasStatus = (labels) =>
+          statusTexts.some((t) => matchesStatus(t, labels));
+        const applied = hasStatus(STATUS_LABELS.applied);
+        const viewed = hasStatus(STATUS_LABELS.viewed);
+        // Viewed / Applied gained on this page don't count (see
+        // rememberFirstStatus) — they apply from the next page load.
+        const seen = rememberFirstStatus(jobCard, applied, viewed);
+        if (settings.hideApplied && applied && !(seen && !seen.applied))
+          reasons.push("Applied");
+        if (settings.hideViewed && viewed && !(seen && !seen.viewed))
+          reasons.push("Viewed");
+        if (settings.hidePromoted && hasStatus(STATUS_LABELS.promoted))
+          reasons.push("Promoted");
+        if (settings.hideEasyApply && hasStatus(STATUS_LABELS.easyApply))
+          reasons.push("Easy Apply");
 
         // Check company blacklist. Whole-word match via termToRegex so
         // "Cap" doesn't hide Capgemini; a trailing * ("cap*") opts into
